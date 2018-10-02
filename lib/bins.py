@@ -1,57 +1,55 @@
 """ Module with class for binnings """
 
 import numpy as np
-from lib.cosmology import Cosmology
-
 
 class Bins(object):
     """ Class to handle uniform binnings """
-    def __init__(self, limit, models, nbins=None, islice=0, nslice=1, auto=None):
-        """ Constructor """
+    def __init__(
+        self,
+        limit_params = None,
+        nbins_params = None,
+        min_cosmo    = None,
+        max_cosmo    = None,
+        islice       = 0,
+        nslice       = 1,
+        auto_binning = None,
+        binw_s       = 2.00):
 
-        # Get the most and least clustering cosmology models
-        min_model = Cosmology.min_cosmo(models)
-        max_model = Cosmology.max_cosmo(models)
+        # set up bin limit
+        min_max = limit_params.copy()
+        min_max['s_min'] = 0
 
-        # Set up binning limit
-        min_max = {}
-        for key, val in limit.items():
-            # convert angular limit to radian
-            if key in ['dec_min', 'dec_max', 'ra_min', 'ra_max']:
-                min_max[key] = np.deg2rad(float(val))
-            elif key in ['z_min', 'z_max', 's_max']:
-                min_max[key] = float(val)
-        self.limit = {}
-        self.limit['s'] = (0., min_max['s_max'])
-        self.limit['dec'] = (min_max['dec_min'], min_max['dec_max'])
-        self.limit['ra'] = (min_max['ra_min'], min_max['ra_max'])
+        # convert to radian
+        if limit_params['unit'] == 'deg':
+            min_max['ra_max'] = np.deg2rad(min_max['ra_max'])
+            min_max['ra_min'] = np.deg2rad(min_max['ra_min'])
+            min_max['dec_max'] = np.deg2rad(min_max['dec_max'])
+            min_max['dec_min'] = np.deg2rad(min_max['dec_min'])
 
         # for angular separation
-        r_min = max_model.z2r(min_max['z_min'])
+        r_min = max_cosmo.z2r(min_max['z_min'])
         theta_max = np.arccos(1. - min_max['s_max']**2/(2 * r_min**2))
-        self.limit['theta'] = (0., theta_max)
 
         # for redshift slice
         diff = (min_max['z_max'] - min_max['z_min']) / nslice
         z_min = min_max['z_min'] + diff * islice
-        z_max = z_min + diff + max_model.dels_to_delz(min_max['s_max'], z_min)
+        z_max = z_min + diff + max_cosmo.dels_to_delz(min_max['s_max'], z_min)
         z_max = min(z_max, min_max['z_max'])
+
+        # create class dictionary
+        self.limit = {}
+        self.limit['s'] = (0., min_max['s_max'])
+        self.limit['dec'] = (min_max['dec_min'], min_max['dec_max'])
+        self.limit['ra'] = (min_max['ra_min'], min_max['ra_max'])
         self.limit['z'] = (z_min, z_max)
+        self.limit['theta'] = (0., theta_max)
 
-
-        # Set up bin numbers
+        # set up number of bins
         self.nbins = {}
-        if auto is None:
-            # Manual binnings:
-            print('  - Mode: manual')
-            for key, val in nbins.items():
-                if key in ('ra', 'dec', 'z', 'theta', 's'):
-                    self.nbins[key] = int(val)
+        if not auto_binning:
+            self.nbins = nbins_params.copy()
         else:
-            # Auto binnings
-            if auto < 0:
-                raise ValueError('Binwidth of S must be greater than 0.')
-            self._set_auto_nbins(min_model, auto)
+            self._set_auto_nbins(min_cosmo, binw_s)
 
         # Print out number of bins
         self.print_info()
@@ -132,11 +130,10 @@ class Bins(object):
 
     def print_info(self):
         """ Print out binning information """
-        print('  - Binning information:')
-        print('   + Bin range: ')
+        print('- bin range: ')
         for key in sorted(self.limit.keys()):
-            print('    + %6s: %.5f, %.5f' % (key, self.min(key), self.max(key)))
+            print(' + %6s: %.5f, %.5f' % (key, self.min(key), self.max(key)))
 
-        print('   + Number of bins:')
+        print('- nbins:')
         for key in sorted(self.nbins.keys()):
-            print('    + %6s: %4d' % (key, self.num_bins(key)))
+            print(' + %6s: %4d' % (key, self.num_bins(key)))

@@ -12,26 +12,28 @@ class JobHelper(object):
     def __init__(self, total_jobs):
         """ Constructor """
         if total_jobs <= 0:
-            raise ValueError('Total jobs must be at least 1.')
+            raise ValueError('total jobs must be at least 1.')
         self.total_jobs = total_jobs
         self.current_job = 0
 
-    def increment(self):
+    def increment(self, verbose=True):
         """ Increment current job index by 1 """
         if self.current_job != self.total_jobs - 1:
             self.current_job += 1
         else:
-            print('Already at the last job index.')
-        print("- Job number: %d. Total jobs: %d." % (self.current_job,
-                                                     self.total_jobs))
+            print('already at the last job index.')
 
-    def set_current_job(self, current_job):
+        if verbose:
+            print("job %d/%d." % (self.current_job, self.total_jobs))
+
+    def set_current_job(self, current_job, verbose=True):
         """ Set current job index to input """
         if current_job < 0 or current_job >= self.total_jobs:
-            raise ValueError('Job must be at least 0 and less than total job.')
+            raise ValueError('job must be at least 0 and less than total job.')
         self.current_job = current_job
-        print("- Job number: %d. Total jobs: %d." % (self.current_job,
-                                                     self.total_jobs))
+
+        if verbose:
+            print("job %d/%d." % (self.current_job, self.total_jobs))
 
     def get_index_range(self, size):
         """ Calculate the start and end indices given job size

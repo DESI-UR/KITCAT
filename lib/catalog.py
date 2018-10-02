@@ -41,284 +41,256 @@ def hist2point(hist, bins_x, bins_y, exclude_zeros=True):
 class GalaxyCatalog(object):
     """ Class to handle galaxy catalogs. """
 
-    def __init__(self, reader, limit):
-        """ Initialize galaxy catalog.
-        Inputs:
-        + reader: dict
-            Dictionary with path and properties of catalog file.
-            Keys: path, dec, ra, z. Values format: str
-        + limit: dict
-            Dictionary with boundaries (inclusive) of catalog.
-            If None, use full catalog.
-            Keys: dec, ra, z. Values format (min, max) """
-        self.ntotal = 0
-        self.catalog = None
-        self.set_catalog(reader)
-        if limit is not None:
-            self.set_limit(limit)
+    def __init__(self, catalog_params, limit_params):
+        """ initialize galaxy catalog
 
-    def set_catalog(self, reader):
-        """ Read in galaxy catalog from FITS file. Convert redshift to
-        comoving distance.
-        Inputs:
-        + reader: dict
-            Dictionary with path and properties of catalog file.
-            Keys: path, dec, ra, z. Values format: str """
+        Parameters:
+        -----------
+        catalog_params: dict
+            path and parameters of .fits
+        limit_params: dict """
 
-        # Read in configuration file
-        print(" - Import catalog from: {}".format(reader['path']))
+        # import catalog from .fits file
+        print('- import catalog from %s' %catalog_params['path'])
 
-        # Read in table
-        table = Table.read(reader['path'])
-        dec = np.deg2rad(table[reader['dec']].data)
-        ra = np.deg2rad(table[reader['ra']].data)
-        z = table[reader['z']].data
+        table = Table.read(catalog_params['path'])
+        dec = np.deg2rad(table[catalog_params['dec']])
+        ra = np.deg2rad(table[catalog_params['ra']])
+        z = table[catalog_params['z']]
         try:
-            w = table[reader['weight']]
+            w = table[catalog_params['weight']]
         except KeyError:
-            w_fkp = table[reader['weight_fkp']].data
-            w_noz = table[reader['weight_noz']].data
-            w_cp = table[reader['weight_cp']].data
-            w_sdc = table[reader['weight_sdc']].data
+            w_fkp = table[catalog_params['weight_fkp']]
+            w_noz = table[catalog_params['weight_noz']]
+            w_cp = table[catalog_params['weight_cp']]
+            w_sdc = table[catalog_params['weight_sdc']]
             w = w_sdc*w_fkp*(w_noz+w_cp-1)
-
         self.catalog = np.array([dec, ra, z, w]).T
-        self.ntotal = self.catalog.shape[0]
 
-    def get_catalog(self, model=None):
-        """ Get catalog. If cosmology is given, convert redshift to comoving
-        distance.
-        Inputs:
-        + model: cosmology.Cosmology (default=None)
-            Cosmology model to convert redshift to comoving distance.
-        Outputs:
-        + catalog: ndarray
-            Data catalog. """
-        # If cosmology is given, convert redshift to comoving distance
-        catalog = np.copy(self.catalog)
-        if model is not None:
-            catalog[:, 2] = model.z2r(catalog[:, 2])
-        return catalog
-
-    def set_limit(self, limit):
-        """ Set boundaries of catalog
-        Inputs:
-        + limit: dict
-            Dictionary with boundaries (inclusive) of catalog
-            Keys: dec, ra, z. Values format: (min, max) """
-
-        # Extract min and max values from dictionary
-        min_dec, max_dec = limit['dec']
-        min_ra, max_ra = limit['ra']
-        min_z, max_z = limit['z']
+        # apply limit cut
+        min_dec, max_dec = limit_params['dec']
+        min_ra, max_ra = limit_params['ra']
+        min_z, max_z = limit_params['z']
 
         # Set boundaries
-        dec, ra, z = self.catalog[:, :3].T
         mask = ((min_dec <= dec) & (dec <= max_dec) &
                 (min_ra <= ra) & (ra <= max_ra) &
                 (min_z <= z) & (z <= max_z))
 
         self.catalog = self.catalog[mask]
-        self.ntotal = self.catalog.shape[0]
+        self.ngals = self.catalog.shape[0]
 
-    def to_rand(self, limit, nbins):
-        """ Convert into RandomCatalog and return.
-        Inputs:
-        + limit: list, tuple, ndarray, dict
-            Bins range in order 'dec', 'ra', 'z'.
-            If dict, use values from keys 'dec', 'ra', 'z'
-        + nbins: list, tuple, ndarray, dict
-            Number of bins in order 'dec', 'ra', 'z'.
-            If dict, use values from keys 'dec', 'ra', 'z'
-        Outputs:
-        + rand: RandomCatalog
-            Distribution catalog """
+    def get_catalog(self, cosmo=None):
+        """ return catalog. convert z to d if cosmology is given """
+        catalog = np.copy(self.catalog)
+        if cosmo is not None:
+            catalog[:, 2] = cosmo.z2r(catalog[:, 2])
+        return catalog
 
-        # Initialize bins range and number of bins
-        num_bins = nbins
-        bins_range = limit
-        if isinstance(bins_range, dict):
-            bins_range = (limit['dec'], limit['ra'], limit['z'])
-        if isinstance(num_bins, dict):
-            num_bins = (nbins['dec'], nbins['ra'], nbins['z'])
+    def norm(self):
+        """ return weighted and unweighted normalization factor for DD """
 
-        # Calculate comoving distribution
+        w = np.copy(self.catalog[:, 3])
+        sum_w = np.sum(w)
+        sum_w2 = np.sum(w**2)
+        w_norm = 0.5 * (sum_w**2 - sum_w2)
+        uw_norm = 0.5 * (self.ngals**2 - self.ngals)
+
+        return w_norm, uw_norm
+
+    def to_cartesian(self, cosmo):
+        """ return galaxy catalog in Cartesian coordinates"""
+
+        dec, ra, z, w = np.copy(self.catalog).T
+        r = cosmo.z2r(z)
+        catalog = np.array([r * np.cos(dec) * np.cos(ra),
+                            r * np.cos(dec) * np.sin(ra),
+                            r * np.sin(dec),
+                            w]).T
+        return catalog
+
+    def to_rand(
+        self,
+        z_min       = None,
+        z_max       = None,
+        z_nbins     = None,
+        ra_min      = None,
+        ra_max      = None,
+        ra_nbins    = None,
+        dec_min     = None,
+        dec_max     = None,
+        dec_nbins   = None,
+        ):
+
+        """ convert into RandomCatalog
+
+        Parameters:
+        -----------
+        z_min, z_max, ra_min, ra_max, dec_min, dec_max: float
+        z_nbins, ra_nbins, dec_nbins: int
+
+        Returns:
+        --------
+        rand: RandomCatalog """
+
+        # calculate z distr (weighted and unweighted)
         z_distr_w, bins_z = self.redshift_distr(
-            bins_range[2], num_bins[2], weighted=True, normed=True)
+            z_min       = z_min,
+            z_max       = z_max,
+            z_nbins     = z_nbins,
+            weighted    = True,
+            normed      = True)
         z_distr_uw, _ = self.redshift_distr(
-            bins_range[2], num_bins[2], weighted=False, normed=True)
+            z_min       = z_min,
+            z_max       = z_max,
+            z_nbins     = z_nbins,
+            weighted    = False,
+            normed      = True)
 
-        # Calculate angular distribution as a set of weighted data points
+        # calculate angular distribution
         angular_distr, bins_dec, bins_ra = self.angular_distr(
-            bins_range[:2], num_bins[:2], weighted=False, normed=False)
+            ra_min      = ra_min,
+            ra_max      = ra_max,
+            ra_nbins    = ra_nbins,
+            dec_min     = dec_min,
+            dec_max     = dec_max,
+            dec_nbins   = dec_nbins,
+            weighted    = False,
+            normed      = False)
 
         # Set up DistrCatalog attributes
+        w = self.catalog[:, 3]
+
         rand = RandomCatalog()
+        rand.ngals = self.ngals
+        rand.sum_w = np.sum(w)
+        rand.sum_w2 = np.sum(w**2)
         rand.z_distr = np.array([z_distr_w, z_distr_uw])
         rand.angular_distr = hist2point(angular_distr, bins_dec, bins_ra)
         rand.bins_z = bins_z
         rand.bins_dec = bins_dec
         rand.bins_ra = bins_ra
-        rand.norm_vars['ntotal'] = self.ntotal
-        rand.norm_vars['sum_w'] = np.sum(self.catalog[:, 3])
-        rand.norm_vars['sum_w2'] = np.sum(self.catalog[:, 3]**2)
 
         return rand
 
-    def redshift_distr(self, limit, nbins, model=None,
-                       weighted=False, normed=False):
-        """ Calculate redshift distribution.
-        If cosmology is given, convert redshift to comoving distance.
-        Inputs:
-        + limit: list, tuple, ndarray, dict
-            Binning range for redshift histogram.
-            If dict, use value of key 'z'.
-        + nbins: int
-            Number of bins for comoving histogram.
-        + model: cosmology.Cosmology (default=None)
-            Cosmology model to convert comoving to redshift.
-        + weighted: bool (default=False)
-            If True, return weighted histogram.
-            Else return unweighted histogram.
-        + normed: bool (default=False)
-            If True, normalized by number of galaxies.
-        Outputs:
-        + z_distr: ndarray
-            Redshift (comoving) distribution.
-        + bins_z: ndarray
-            Redshift (comoving) binedges. """
-        bins_range = limit['z'] if isinstance(limit, dict) else limit
-        weights = self.catalog[:, 3] if weighted else None
-        z = self.catalog[:, 2]
+    def redshift_distr(
+        self,
+        z_min    = None,
+        z_max    = None,
+        z_nbins  = None,
+        cosmo    = None,
+        weighted = False,
+        normed   = False,
+        ):
+        """ calculate z distribution. convert z to d if cosmology is given
 
-        # If given cosmological model, calculate comoving distribution
-        if model is not None:
-            bins_range = model.z2r(bins_range)
+        Parameters:
+        -----------
+        z_min, z_max: float
+        nbins: int
+        cosmo:
+        weighted: bool
+            if true, return weighted histogram
+        normed: bool
+            if true, normalized histogram by number of data
+
+        Returns:
+        --------
+        z_distr: array of shape (nbins, )
+        bins_z: array of shape (nbins+1, )
+            binsedge of distribution """
+
+        w = self.catalog[:, 3] if weighted else None
+        z = np.copy(self.catalog[:, 2])
+        norm = 1.*self.ngals if normed else 1.
+
+        # convert z to d
+        if cosmo is not None:
+            z_max = cosmo.z2r(z_max)
+            z_min = cosmo.z2r(z_min)
             z = model.z2r(z)
 
-        z_distr, bins_z = np.histogram(z, bins=nbins, range=bins_range,
-                                       weights=weights)
-
-        # Normalized by number of galaxies
-        if normed:
-            z_distr = z_distr/self.ntotal
+        z_distr, bins_z = np.histogram(z,
+                                       bins     = z_nbins,
+                                       range    = (z_min, z_max),
+                                       weights  = w)
+        z_distr = z_distr/norm
 
         return z_distr, bins_z
 
-    def angular_distr(self, limit, nbins, weighted=False, normed=False):
-        """ Calculate angular distribution.
-        Inputs:
-        + limit: list, tupple, ndarray, dict
-            Bins range in order 'dec', 'ra'.
-            If dict, use value from keys 'dec' and 'ra'
-        + nbins: list, tupple, ndarray, dict
-            Number of bins in order 'dec', 'ra'.
-            If dict, use value from keys 'dec' and 'ra'
-        + weighted: bool (default=False)
-            If True, return weighted histogram. Else return unweighted.
-        + normed: bool (default=False)
-            If True, normalized by number of galaxies.
-        Outputs:
-        + angular_distr: ndarray
-            Angular distribution
-        + bins_dec: ndarray
-            Angular bins for declination
-        + bins_ra: ndarray
-            Angular bins for right ascension """
+    def angular_distr(
+        self,
+        ra_min      = None,
+        ra_max      = None,
+        ra_nbins    = None,
+        dec_min     = None,
+        dec_max     = None,
+        dec_nbins   = None,
+        weighted    = False,
+        normed      = False):
+        """ calculate angular distribution.
 
-        # Initialize bins range and number of bins
-        num_bins = nbins
-        bins_range = limit
-        if isinstance(bins_range, dict):
-            bins_range = (limit['dec'], limit['ra'])
-        if isinstance(num_bins, dict):
-            num_bins = (nbins['dec'], nbins['ra'])
+        Parameters:
+        -----------
+        ra_min, ra_max, dec_min, dec_max: float
+        ra_nbins, dec_nbins: int
+        weighted: bool
+            if true, return weighted histogram
+        normed: bool
+            if true, normalized histogram by number of data
 
-        # Calculate distribution
-        weights = self.catalog[:, 3] if weighted else None
+        Returns:
+        --------
+        angular_distr: array of shape (dec_nbins, ra_nbins)
+        bins_dec: array of shape (dec_nbins, )
+            binsedge of distribution
+        bins_dec: array of shape (ra_nbins, )
+            binsedge of distribution """
+
+        dec, ra, _, w = np.copy(self.catalog).T
+        w = w if weighted else None
+        norm = 1.*self.ngals if normed else 1.
+
         angular_distr, bins_dec, bins_ra = np.histogram2d(
-            self.catalog[:, 0], self.catalog[:, 1],
-            bins=num_bins, range=bins_range, weights=weights)
-
-        # Normalized by number of galaxies
-        if normed:
-            angular_distr = 1. * angular_distr / self.catalog.shape[0]
+            dec, ra,
+            bins        = (dec_nbins, ra_nbins),
+            range       = ([dec_min, dec_max], [ra_min, ra_max]),
+            weights     = w)
+        angular_distr = angular_distr/norm
 
         return angular_distr, bins_dec, bins_ra
 
-    def norm(self):
-        """ Return unweighted and weighted normalization factor
-        for pairwise separation distribution
-        Unweighted equation:
-        - norm = 0.5(ntotal^2-ntotal); ntotal is the size of catalog
-        Weighted equation:
-        - norm = 0.5(sum_w^2-sum_w2)
-        where sum_w and sum_w2 are the sum of weights and weights squared
-        Outputs:
-        + w_norm: float
-            Weighted normalization factor
-        + uw_norm: float
-            Unweighted normalization factor """
+    def build_tree(self, metric, cosmo=None, return_catalog=False, leaf=40):
+        """ a balltree from catalog. If metric is 'euclidean', cosmology is required.
 
-        sum_w = np.sum(self.catalog[:, 3])
-        sum_w2 = np.sum(self.catalog[:, 3]**2)
-
-        w_norm = 0.5 * (sum_w**2 - sum_w2)
-        uw_norm = 0.5 * (self.ntotal**2 - self.ntotal)
-
-        return w_norm, uw_norm
-
-    def to_cartesian(self, model):
-        """ Return galaxy catalog in Cartesian coordinates
-        Inputs:
-        + cosmo: cosmology.Cosmology (default=None)
-            Cosmology model to convert redshift to comoving.
-        Outputs:
-        + catalog: np.ndarray
-            Galaxy catalog in Cartesian coordinate system. """
-        dec, ra, z = self.catalog[:, :3].T
-        r = model.z2r(z)
-        catalog = np.array([r * np.cos(dec) * np.cos(ra),
-                            r * np.cos(dec) * np.sin(ra),
-                            r * np.sin(dec),
-                            self.catalog[:, 3]]).T
-        return catalog
-
-    def build_balltree(self, metric, model=None, return_catalog=False, leaf=40):
-        """ Build a balltree from catalog. If metric is 'euclidean',
-        cosmology is required.
-        Inputs:
-        + metric: str
+        Parameters:
+        ----------
+        metric: str
             Metric must be either 'haversine' or 'euclidean'.
-            If metric is 'haversine', build a balltree from DEC and RA
-            coordinates of galaxies.
-            If metric is 'euclidean', build a 3-dimensional kd-tree
-        + return_catalog: bool (default=False)
-            If True, return the catalog in balltree
-        + cosmo: cosmology.Cosmology (default=None)
+            If metric is 'haversine', build a tree from dec and ra.
+            If metric is 'euclidean', build a tree from x, y, z.
+        cosmo: cosmology.Cosmology (default=None)
             Cosmology model to convert redshift to comoving.
-        + leaf: int (default=40)
+        leaf: int (default=40)
             Number of points at which KD-tree switches to brute-force. A leaf
             node is guaranteed to satisfy leaf_size <= n_points <= 2*leaf_size,
             except in the case that n_samples < leaf_size.
             More details can be found at sklearn.neightbors.BallTree. """
+
         if metric == 'euclidean':
-            if model is None:
-                raise TypeError('Cosmology must be given if metric ' +
-                                'is "euclidean".')
-            # Convert Celestial coordinate into Cartesian coordinate
-            catalog = self.to_cartesian(model)
-            tree = KDTree(catalog[:, :3], leaf_size=leaf, metric='euclidean')
+            # convert Celestial coordinate into Cartesian coordinate
+            catalog = self.to_cartesian(cosmo)
+            tree = KDTree(catalog[:, :3], leaf_size=leaf, metric=metric)
+
         elif metric == 'haversine':
-            catalog = self.catalog[:, :-2]
+            catalog = self.catalog[:, :2]
             tree = BallTree(catalog, leaf_size=leaf, metric=metric)
+
         else:
-            raise ValueError('Metric must be either "haversine" ' +
-                             'or "euclidean".')
+            raise ValueError('metric must be "haversin" or "euclidean".')
+        print("- building tree: %s " % metric)
 
-        print(" - Creating BallTree with metric %s " % metric)
-
-        # Return KD-tree and the catalog
+        # return KD-tree and the catalog
         if return_catalog:
             return tree, catalog
         return tree
@@ -329,57 +301,52 @@ class RandomCatalog(object):
     redshif (comoving) distribution, but not the coordinates of each galaxy. """
 
     def __init__(self):
-        """ Initialize angular, redshift (comoving) distribution,
-        and normalization variables """
+        """ initialize angular, z distribution, and norm variables """
+
+        self.ngals = 0
+        self.sum_w = 0
+        self.sum_w2 =  0
+
         self.z_distr = None
         self.angular_distr = None
         self.bins_z = None
         self.bins_ra = None
         self.bins_dec = None
-        self.norm_vars = {'ntotal': None, 'sum_w': None, 'sum_w2': None}
+
 
     def norm(self, data_catalog=None):
-        """ Return unweighted and weighted normalization factor
-        for pairwise separation distribution
-        Unweighted equation:
-        - norm = 0.5(ntotal^2-ntotal); ntotal is the size of catalog
-        Weighted equation:
-        - norm = 0.5(sum_w^2-sum_w2);
-        where sum_w and sum_w2 are the sum of weights and weights squared
-        Inputs:
-        + data_catalog: DataCatalog (default=None)
-            If None, calculate the normalization factor for itself (i.e. RR).
-            Otherwise, calculate the normalization factor for
-            correlation distribution with the input catalog (i.e. DR).
-        Outputs:
-        + w_norm: float
-            Weighted normalization factor
-        + uw_norm: float
-            Unweighted normalization factor """
+        """ return unweighted and weighted normalization factor """
 
         if data_catalog is not None:
-            w_norm = (np.sum(data_catalog.catalog[:, 3]) *
-                      self.norm_vars['sum_w'])
-            uw_norm = data_catalog.ntotal * self.norm_vars['ntotal']
+            w_norm = np.sum(data_catalog.catalog[:, 3]) * sum_W
+            uw_norm = data_catalog.ntotal * ngals
             return w_norm, uw_norm
 
         w_norm = 0.5 * (self.norm_vars['sum_w']**2 - self.norm_vars['sum_w2'])
-        uw_norm = 0.5 * (self.norm_vars['ntotal']**2 - self.norm_vars['ntotal'])
+        uw_norm = 0.5 * (self.norm_vars['ngals']**2 - self.norm_vars['ngals'])
         return w_norm, uw_norm
 
-    def build_balltree(self, return_catalog=False, leaf=40):
-        """ Build a balltree using DEC and RA from angular distributions.
-        Metric: haversine.
-        + return_catalog: bool (default=False)
-            If True, return the angular distribution catalog.
-        + leaf: int (default=40)
+    def get_catalog(self, cosmo=None):
+        """ return angular distribution """
+        return np.copy(self.angular_distr)
+
+    def build_tree(self, leaf=40):
+        """ build a balltree from angular distributions using haversine.
+
+        Parameters:
+        -----------
+        leaf: int (default=40)
             Number of points at which KD-tree switches to brute-force. A leaf
             node is guaranteed to satisfy leaf_size <= n_points <= 2*leaf_size,
             except in the case that n_samples < leaf_size.
-            More details can be found at sklearn.neightbors.BallTree."""
-        print("  - Creating BallTree")
-        balltree = BallTree(self.angular_distr[:, :2], leaf_size=leaf,
+            More details can be found at sklearn.neightbors.BallTree.
+
+        Returns:
+        --------
+        balltree """
+
+        print("- building tree: haversine")
+        balltree = BallTree(self.angular_distr[:, :2],
+                            leaf_size=leaf,
                             metric='haversine')
-        if return_catalog:
-            return balltree, self.angular_distr
         return balltree

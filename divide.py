@@ -8,101 +8,69 @@ import argparse
 import numpy
 
 # User-defined modules
-from lib.myio import save, load
-from lib.helper import JobHelper
-
-
-def main():
-    """ Main
-    Cmd arguments are job number, total number of jobs, configuration file,
-    and output prefix
-      + --ijob: Job number must be an integer from 0 to total_job-1.
-      + --njob: Total number of jobs that will be submitted.
-      + --config: Setting for correlation function. See below.
-      + --prefix: Prefix of the output files (can include folder path, folder
-      must exist).
-    If job number is 0, will also save comoving distribution P(r) and
-    normalization factor."""
-    print("DIVIDE module")
-
-    # Read in cmd argument
-    parser = argparse.ArgumentParser(
-        description='Divide calculation into multiple parts.')
-    parser.add_argument('-p', '-P', '--prefix', type=str, help='Output prefix.')
-    parser.add_argument('-i', '-I', '--ijob', type=int, default=0,
-                        help='Index of job. From 0 to N-1.')
-    parser.add_argument('-n', '-N', '--njob', type=int, default=1,
-                        help='Total number of jobs.')
-    parser.add_argument('-t', '-T', '--time', action='store_true',
-                        default=False, help='Enable save runtime.')
-    parser.add_argument('--version', action='version', version='KITCAT 1.10')
-    args = parser.parse_args()
-
-    # Set job helper
-    job_helper = JobHelper(args.njob)
-    job_helper.set_current_job(args.ijob)
-
-    # Set timer
-    timer = {'dd': None, 'dr': None, 'rr': None}
-
-    # Load pickle file
-    loader = next(load('{}_preprocess.pkl'.format(args.prefix)))
-
-    # Set correlation helper
-    correlation = loader['helper']
-
-    # Parallelize DD if only one cosmology model is given
-    if len(correlation.models) == 1:
-        # Keeping track of time
-        start_time = time.time()
-
-        # Import data and calculate DD(s)
-        data = loader['dd']
-        tree, catalog = data.build_balltree(
-            'euclidean', model=correlation.models[0], return_catalog=True)
-        correlation.set_dd(tree, catalog, job_helper)
-
-        # Save and print out time
-        timer['dd'] = time.time()-start_time
-        print("--- %f seconds ---" % (timer['dd']))
-
-    # Calculate f(theta)
-    # Keeping track of time
-    start_time = time.time()
-
-    # Import data and calculate f(theta)
-    tree = loader['rr']['tree']
-    catalog = loader['rr']['catalog']
-    correlation.set_theta_distr(tree, catalog, job_helper)
-
-    # Save and print out time
-    timer['rr'] = time.time()-start_time
-    print("--- %f seconds ---" % (timer['rr']))
-
-    # Calculate g(theta, rz)
-    # Keeping track of time
-    start_time = time.time()
-
-    # Import data and calculate g(theta, rz)
-    tree = loader['dr']['tree']
-    data_catalog = loader['dr']['data_catalog']
-    angular_catalog = loader['dr']['angular_catalog']
-    mode = loader['dr']['mode']
-    correlation.set_z_theta_distr(tree, data_catalog, angular_catalog,
-                                  mode, job_helper)
-
-    # Save and print out time
-    timer['dr'] = time.time()-start_time
-    print("--- %f seconds ---" % (timer['dr']))
-
-    # Save object and timer
-    if args.time:
-        runtime = [timer['rr'], timer['dr'], timer['dd']]
-        numpy.savetxt("%s_timer.txt" % args.prefix, runtime,
-                      header='RR(s)  DR(s)  DD(s)')
-
-    save("%s_divide_%03d.pkl" % (args.prefix, args.ijob), correlation)
-
+import lib.io as lio
+import lib.helper as lhelper
+import lib.analysis as lanalysis
 
 if __name__ == "__main__":
-    main()
+    """ Main"""
+    print('')
+
+    def parse_command_line():
+        parser = argparse.ArgumentParser(description='preprocess data')
+        parser.add_argument('--prefix', '-p',
+                            help    = 'output prefix.',
+                            dest    = 'prefix',
+                            type    = str)
+        parser.add_argument('--ijob', '-i',
+                            help    = 'job index',
+                            default = 0,
+                            dest    = 'ijob',
+                            type    = int)
+        parser.add_argument('--njob', '-n',
+                            help    = 'total number of z-slice',
+                            default = 1,
+                            dest    = 'njob',
+                            type    = int)
+        parser.add_argument('--time', '-t',
+                            help='save runtime',
+                            action='store_true',
+                            default=False)
+        params = parser.parse_args()
+        return params
+
+    args = parse_command_line()
+
+    # set job helper
+    job_helper = lhelper.JobHelper(args.njob)
+    job_helper.set_current_job(args.ijob)
+
+    # set timer
+    time_dd = 0
+    time_dr = 0
+    time_rr = 0
+
+    # load preprocess data
+    preprocess_params = lio.load('%s_preprocess.pkl' % args.prefix)
+    rr_tree = preprocess_params['rr']['tree']
+    rr_catalog = preprocess_params['rr']['catalog']
+    dd_tree = preprocess_params['dd']['tree']
+    dd_catalog = preprocess_params['dd']['catalog']
+    dr_tree = preprocess_params['dr']['tree']
+    dr_catalog = preprocess_params['dr']['catalog']
+    bins = preprocess_params['bins']
+
+    # calculate f(theta)
+    start_time = time.time()
+    ftheta = lanalysis.get_ftheta(
+        catalog = rr_catalog,
+        tree    = rr_tree,
+        theta_max   = bins.max('theta'),
+        theta_nbins = bins.num_bins('theta'),
+        job_helper  = job_helper,
+        same        = True)
+    time_rr = time.time()-start_time
+    print("--- %f seconds ---" % time_rr)
+
+
+    # save("%s_divide_%03d.pkl" % (args.prefix, args.ijob), correlation)
