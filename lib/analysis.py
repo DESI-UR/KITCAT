@@ -67,8 +67,6 @@ def get_dd(
 
     # double counting correction
     if same:
-        dd[0][0] -= np.sum(catalog[start:end, 3]**2)
-        dd[1][0] -= end - start
         dd = dd / 2.
 
     return dd
