@@ -13,7 +13,7 @@ def parse_config(config_file, section):
 
     params_dict = {}
 
-    if section in ["GALAXY", "RANDOM"]:
+    if section in ["GALAXY_1", "GALAXY_2", "RANDOM_1", "RANDOM_2"]:
         params_dict['path'] = parser.get(section, 'path')
         params_dict['ra'] = parser.get(section, 'ra')
         params_dict['dec'] = parser.get(section, 'dec')

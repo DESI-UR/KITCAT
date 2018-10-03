@@ -14,7 +14,7 @@ if __name__ == "__main__":
     print('')
 
     def parse_command_line():
-        parser = argparse.ArgumentParser(description='preprocess data')
+        parser = argparse.ArgumentParser(description='integration')
         parser.add_argument('--prefix', '-p',
                             help    = 'output prefix.',
                             dest    = 'prefix',
@@ -39,6 +39,9 @@ if __name__ == "__main__":
             helper.add(lio.load(fname))
             continue
         helper = lio.load(fname)
+        import numpy as np
+        helper.ztheta_d1r2 = np.copy(helper.ztheta_d1r2)
+
 
     # calculate dd, dr, rr
     print('')
@@ -47,7 +50,8 @@ if __name__ == "__main__":
 
     print('')
     print('calculate DR(s)')
-    dr = helper.get_dr()
+    d1r2 = helper.get_dr(mode='r2')
+    d2r1 = helper.get_dr(mode='r1')
 
     print('')
     print('calculate RR(s)')
@@ -59,13 +63,15 @@ if __name__ == "__main__":
     tpcf_list = []
     for i in range(dd.shape[0]):
         tpcf = lcorrelation.Correlation(
-            dd      = dd[i],
-            dr      = dr[i],
-            rr      = rr[i],
-            bins    = helper.bins.bins('s'),
-            norm_rr = helper.norm_rr,
-            norm_dr = helper.norm_dr,
-            norm_dd = helper.norm_dd)
+            dd          = dd[i],
+            rr          = rr[i],
+            d1r2        = d1r2[i],
+            d2r1        = d2r1[i],
+            bins        = helper.bins.bins('s'),
+            norm_rr     = helper.norm_rr,
+            norm_dd     = helper.norm_dd,
+            norm_d1r2   = helper.norm_d1r2,
+            norm_d2r1   = helper.norm_d2r1)
         tpcf_list.append(tpcf)
 
     # save output

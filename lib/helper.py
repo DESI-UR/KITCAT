@@ -54,22 +54,32 @@ class CorrelationHelper(object):
 
     def __init__(self):
         """ constructor """
+
+        # normalization
         self.norm_dd = 1.
-        self.norm_dr = 1.
         self.norm_rr = 1.
+        self.norm_d1r2 = 1.
+        self.norm_d2r1 = 1.
+
+        # distribution
         self.zztheta = None
         self.ftheta = None
-        self.ztheta = None
-        self.z_distr = None
+        self.ztheta_d1r2 = None
+        self.ztheta_d2r1 = None
+        self.z1_distr = None
+        self.z2_distr = None
+
+        # misc
         self.cosmos_list = None
         self.bins = None
 
     def add(self, other):
-        self.ftheta  += other.ftheta
-        self.ztheta  += other.ztheta
         self.zztheta += other.zztheta
+        self.ftheta  += other.ftheta
+        self.ztheta_d1r2 += other.ztheta_d1r2
+        self.ztheta_d2r1 += other.ztheta_d2r1
 
-    def get_rr(self, nloops=1):
+    def get_rr(self):
 
         n_models = len(self.cosmos_list)
         rr = np.zeros((n_models, 2, self.bins.num_bins('s')))
@@ -85,54 +95,34 @@ class CorrelationHelper(object):
             r = cosmo.z2r(self.bins.bins('z'))
             r = 0.5 * (r[:-1] + r[1:])
 
-            if nloops == 0:
-                # no explicit for-loop to calculate distance
-                # fast at the expense of memory
-                # one for-loop is needed for weighting
+            for j in range(2):
 
-                for j in range(2):
+                # calculate 2-d weight matrix
+                w = self.ftheta[:, None] * self.z1_distr[j][None, :]
 
-                    # calculate 3-d weight matrix
-                    w = (self.z_distr[j][None, :, None] *
-                         self.z_distr[j][None, None, :] *
-                         self.ftheta[:, None, None])
+                # Build a 2-d distance matrices
+                temp = np.cos(theta[:, None]) * r[None, :]
+                r_sq = r[None, :]**2
 
-                    # calculate 3-d distance matrix
-                    dist = distance(theta = theta[:, None, None],
-                                    r1    = r[None, :, None],
-                                    r2    = r[None, None, :])
-
-                    # calculate RR(s)
-                    rr[i][j], _ = np.histogram(dist,
-                                               bins     = s,
-                                               weights  = w)
-
-            elif nloops == 1:
-
-                for j in range(2):
-
-                    # calculate 2-d weight matrix
-                    w = self.ftheta[:, None] * self.z_distr[j][None, :]
-
-                    # Build a 2-d distance matrices
-                    temp = np.cos(theta[:, None]) * r[None, :]
-                    r_sq = r[None, :]**2
-
-                    # Calculate RR(s)
-                    for k, pt_r in enumerate(r):
-                        dist = np.sqrt(pt_r**2 + r_sq - 2*pt_r*temp)
-                        hist, _ = np.histogram(dist,
-                                               bins    = s,
-                                               weights = self.z_distr[j][k]*w)
-                        rr[i][j] += hist
-            else:
-                raise ValueError('Invalid input for num_loops')
+                # Calculate RR(s)
+                for k, pt_r in enumerate(r):
+                    dist = np.sqrt(pt_r**2 + r_sq - 2*pt_r*temp)
+                    hist, _ = np.histogram(dist,
+                                           bins    = s,
+                                           weights = self.z2_distr[j][k]*w)
+                    rr[i][j] += hist
 
         rr = np.squeeze(rr)
         return rr
 
+    def get_dr(self, mode='r1'):
 
-    def get_dr(self, nloops=1):
+        if mode == 'r1':
+            ztheta = self.ztheta_d2r1
+            z_distr = self.z1_distr
+        elif mode == 'r2':
+            ztheta = self.ztheta_d1r2
+            z_distr = self.z2_distr
 
         n_models = len(self.cosmos_list)
         dr = np.zeros((n_models, 2, self.bins.num_bins('s')))
@@ -148,43 +138,21 @@ class CorrelationHelper(object):
             r = cosmo.z2r(self.bins.bins('z'))
             r = 0.5 * (r[:-1] + r[1:])
 
-            if nloops == 0:
-                # no explicit for-loop to calculate distance
-                # fast at the expense of memory
-                # one for-loop is needed for weighting
+            for j in range(2):
 
-                for j in range(2):
-                    # Calculate 3-dimensional weights matrix
-                    w = self.z_distr[j][None, None, :]*self.ztheta[j][:, :, None]
+                w = ztheta[j]
 
-                    # calculate 3-d distance matrix
-                    dist = distance(theta = theta[:, None, None],
-                                    r1    = r[None, :, None],
-                                    r2    = r[None, None, :])
+                # Build a 2-d distance matrices
+                temp = np.cos(theta[:, None]) * r[None, :]
+                r_sq = r[None, :]**2
 
-                    # calculate RR(s)
-                    dr[i][j], _ = np.histogram(dist,
-                                               bins     = s,
-                                               weights  = w)
-
-            elif nloops == 1:
-                for j in range(2):
-
-                    w = self.ztheta[j]
-
-                    # Build a 2-d distance matrices
-                    temp = np.cos(theta[:, None]) * r[None, :]
-                    r_sq = r[None, :]**2
-
-                    # Calculate RR(s)
-                    for k, pt_r in enumerate(r):
-                        dist = np.sqrt(pt_r**2 + r_sq - 2*pt_r*temp)
-                        hist, _ = np.histogram(dist,
-                                               bins    = s,
-                                               weights = self.z_distr[j][k]*w)
-                        dr[i][j] += hist
-            else:
-                raise ValueError('Invalid input for num_loops')
+                # Calculate RR(s)
+                for k, pt_r in enumerate(r):
+                    dist = np.sqrt(pt_r**2 + r_sq - 2*pt_r*temp)
+                    hist, _ = np.histogram(dist,
+                                           bins    = s,
+                                           weights = z_distr[j][k]*w)
+                    dr[i][j] += hist
 
         dr = np.squeeze(dr)
         return dr

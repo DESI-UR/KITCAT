@@ -38,6 +38,23 @@ def hist2point(hist, bins_x, bins_y, exclude_zeros=True):
         return catalog[np.logical_not(zeros)]
     return catalog
 
+
+def get_norm(catalog1, catalog2, same=False):
+    """ get normalization constant """
+    n1 = catalog1.ngals
+    n2 = catalog2.ngals
+    w1 = catalog1.get_catalog()[:, 3]
+    w2 = catalog2.get_catalog()[:, 3]
+
+    u_norm = n1 * n2
+    w_norm = np.sum(w1) * np.sum(w2)
+
+    if same:
+        u_norm = 0.5 * (u_norm - n1)
+        w_norm = 0.5 * (w_norm - np.sum(w1**2))
+
+    return w_norm, u_norm
+
 class GalaxyCatalog(object):
     """ Class to handle galaxy catalogs. """
 
@@ -86,17 +103,6 @@ class GalaxyCatalog(object):
         if cosmo is not None:
             catalog[:, 2] = cosmo.z2r(catalog[:, 2])
         return catalog
-
-    def norm(self):
-        """ return weighted and unweighted normalization factor for DD """
-
-        w = np.copy(self.catalog[:, 3])
-        sum_w = np.sum(w)
-        sum_w2 = np.sum(w**2)
-        w_norm = 0.5 * (sum_w**2 - sum_w2)
-        uw_norm = 0.5 * (self.ngals**2 - self.ngals)
-
-        return w_norm, uw_norm
 
     def to_cartesian(self, cosmo):
         """ return galaxy catalog in Cartesian coordinates"""
@@ -162,14 +168,12 @@ class GalaxyCatalog(object):
         w = self.catalog[:, 3]
 
         rand = RandomCatalog()
-        rand.ngals = self.ngals
-        rand.sum_w = np.sum(w)
-        rand.sum_w2 = np.sum(w**2)
         rand.z_distr = np.array([z_distr_w, z_distr_uw])
         rand.angular_distr = hist2point(angular_distr, bins_dec, bins_ra)
         rand.bins_z = bins_z
         rand.bins_dec = bins_dec
         rand.bins_ra = bins_ra
+        rand.ngals = rand.angular_distr.shape[0]
 
         return rand
 
@@ -304,27 +308,11 @@ class RandomCatalog(object):
         """ initialize angular, z distribution, and norm variables """
 
         self.ngals = 0
-        self.sum_w = 0
-        self.sum_w2 =  0
-
         self.z_distr = None
         self.angular_distr = None
         self.bins_z = None
         self.bins_ra = None
         self.bins_dec = None
-
-
-    def norm(self, data_catalog=None):
-        """ return unweighted and weighted normalization factor """
-
-        if data_catalog is not None:
-            w_norm = np.sum(data_catalog.catalog[:, 3]) * sum_W
-            uw_norm = data_catalog.ntotal * ngals
-            return w_norm, uw_norm
-
-        w_norm = 0.5 * (self.norm_vars['sum_w']**2 - self.norm_vars['sum_w2'])
-        uw_norm = 0.5 * (self.norm_vars['ngals']**2 - self.norm_vars['ngals'])
-        return w_norm, uw_norm
 
     def get_catalog(self, cosmo=None):
         """ return angular distribution """

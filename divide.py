@@ -17,7 +17,7 @@ if __name__ == "__main__":
     print('')
 
     def parse_command_line():
-        parser = argparse.ArgumentParser(description='preprocess data')
+        parser = argparse.ArgumentParser(description='combinatorics')
         parser.add_argument('--prefix', '-p',
                             help    = 'output prefix.',
                             dest    = 'prefix',
@@ -47,55 +47,75 @@ if __name__ == "__main__":
 
     # set timer
     time_dd = 0
-    time_dr = 0
     time_rr = 0
+    time_d1r2 = 0
+    time_d2r1 = 0
 
     # load preprocess data
     preprocess_params = lio.load('%s_preprocess.pkl' % args.prefix)
     rr_params = preprocess_params['rr']
     dd_params = preprocess_params['dd']
-    dr_params = preprocess_params['dr']
+    d1r2_params = preprocess_params['d1r2']
+    d2r1_params = preprocess_params['d2r1']
     bins = preprocess_params['bins']
     cosmos_list = preprocess_params['cosmos_list']
     helper = preprocess_params['helper']
+    same = preprocess_params['same']
 
     # calculate f(theta)
     print('')
     start_time = time.time()
-    ftheta = None
     ftheta = lanalysis.get_ftheta(
-        catalog     = rr_params['catalog'],
-        tree        = rr_params['tree'],
-        theta_max   = bins.max('theta'),
-        theta_nbins = bins.num_bins('theta'),
-        job_helper  = job_helper,
-        same        = True)
+        tree_catalog    = rr_params['tree_catalog'],
+        pair_catalog    = rr_params['pair_catalog'],
+        tree            = rr_params['tree'],
+        theta_max       = bins.max('theta'),
+        theta_nbins     = bins.num_bins('theta'),
+        job_helper      = job_helper,
+        same            = same)
     time_rr = time.time()-start_time
     print("--- %f seconds ---" % time_rr)
 
     # calculate ztheta
     print('')
     start_time = time.time()
-    ztheta = None
-    ztheta = lanalysis.get_ztheta(
-        tree_catalog    = dr_params['tree_catalog'],
-        pair_catalog    = dr_params['pair_catalog'],
-        tree            = dr_params['tree'],
+    ztheta_d1r2 = lanalysis.get_ztheta(
+        tree_catalog    = d1r2_params['tree_catalog'],
+        pair_catalog    = d1r2_params['pair_catalog'],
+        tree            = d1r2_params['tree'],
         z_min           = bins.min('z'),
         z_max           = bins.max('z'),
         z_nbins         = bins.num_bins('z'),
         theta_max       = bins.max('theta'),
         theta_nbins     = bins.num_bins('theta'),
         job_helper      = job_helper,)
-    time_dr = time.time()-start_time
-    print("--- %f seconds ---" % time_dr)
+    time_d1r2 = time.time()-start_time
+    print("--- %f seconds ---" % time_d1r2)
+
+    if same:
+        ztheta_d2r1 = np.copy(ztheta_d1r2)
+    else:
+        print('')
+        start_time = time.time()
+        ztheta_d2r1 = lanalysis.get_ztheta(
+            tree_catalog    = d2r1_params['tree_catalog'],
+            pair_catalog    = d2r1_params['pair_catalog'],
+            tree            = d2r1_params['tree'],
+            z_min           = bins.min('z'),
+            z_max           = bins.max('z'),
+            z_nbins         = bins.num_bins('z'),
+            theta_max       = bins.max('theta'),
+            theta_nbins     = bins.num_bins('theta'),
+            job_helper      = job_helper,)
+        time_d2r1= time.time()-start_time
+        print("--- %f seconds ---" % time_d2r1)
 
     # calculate zztheta
     print('')
     start_time = time.time()
-    zztheta = None
     zztheta = lanalysis.get_zztheta(
-        catalog         = dd_params['catalog'],
+        tree_catalog    = dd_params['tree_catalog'],
+        pair_catalog    = dd_params['pair_catalog'],
         tree            = dd_params['tree'],
         z_min           = bins.min('z'),
         z_max           = bins.max('z'),
@@ -103,13 +123,14 @@ if __name__ == "__main__":
         theta_max       = bins.max('theta'),
         theta_nbins     = bins.num_bins('theta'),
         job_helper      = job_helper,
-        same            = True,)
+        same            = same)
     time_dd = time.time()-start_time
     print("--- %f seconds ---" % time_dd)
 
     # store to helper object
     helper.ftheta = ftheta
-    helper.ztheta = ztheta
+    helper.ztheta_d1r2 = ztheta_d1r2
+    helper.ztheta_d2r1 = ztheta_d2r1
     helper.zztheta = zztheta
     if args.ijob == 0:
         helper.cosmos_list = cosmos_list

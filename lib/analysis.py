@@ -72,7 +72,7 @@ def get_dd(
     return dd
 
 def get_ftheta(
-    catalog, tree,
+    pair_catalog, tree_catalog, tree,
     theta_max   = 0.18,
     theta_nbins = 100,
     job_helper  = None,
@@ -102,13 +102,13 @@ def get_ftheta(
     if job_helper is None:
         job_helper = JobHelper(1)
         job_helper.set_current_job(0, verbose=False)
-    start, end = job_helper.get_index_range(catalog.shape[0])
+    start, end = job_helper.get_index_range(pair_catalog.shape[0])
     n = end - start - 1
 
     print('')
     print('calculate f(theta) from index %d to %d' % (start, end - 1))
 
-    for i, pt in enumerate(catalog[start:end]):
+    for i, pt in enumerate(pair_catalog[start:end]):
         if i % checkpoint is 0:
             print('- index: %d/%d' % (i, n))
         index, theta = tree.query_radius(pt[:2].reshape(1, -1),
@@ -118,7 +118,7 @@ def get_ftheta(
         theta = theta[0]
 
         # w = w1 * w2
-        w = pt[2] * catalog[:, 2][index]
+        w = pt[2] * tree_catalog[:, 2][index]
         hist, _ = np.histogram(theta,
                                bins     = theta_nbins,
                                range    = (0., theta_max),
@@ -205,7 +205,7 @@ def get_ztheta(
 
 
 def get_zztheta(
-    catalog, tree,
+    pair_catalog, tree_catalog, tree,
     z_min       = 0.4,
     z_max       = 0.7,
     z_nbins     = 600,
@@ -242,7 +242,7 @@ def get_zztheta(
     if job_helper is None:
         job_helper = JobHelper(1)
         job_helper.set_current_job(0, verbose=False)
-    start, end = job_helper.get_index_range(catalog.shape[0])
+    start, end = job_helper.get_index_range(pair_catalog.shape[0])
     n = end - start - 1
 
     nbins = (theta_nbins, z_nbins)
@@ -251,7 +251,7 @@ def get_zztheta(
     print('')
     print('calculate zztheta from index %d to %d' % (start, end - 1))
 
-    for i, pt in enumerate(catalog[start:end]):
+    for i, pt in enumerate(pair_catalog[start:end]):
         if i % checkpoint is 0:
             print('- index: %d/%d' % (i, n))
         index, theta = tree.query_radius(pt[:2].reshape(1, -1),
@@ -260,11 +260,11 @@ def get_zztheta(
         index = index[0]
         theta = theta[0]
         iz = int(z_nbins * (pt[2]-z_min)/(z_max - z_min))
-        z = catalog[:, 2][index]
+        z = tree_catalog[:, 2][index]
 
         # fill weighted histogram
         # w = w1 * w2
-        w = pt[3] * catalog[:, 3][index]
+        w = pt[3] * tree_catalog[:, 3][index]
         hist, _, _  = np.histogram2d(theta, z,
                                      bins     = nbins,
                                      range    = bins_range,
@@ -279,7 +279,5 @@ def get_zztheta(
 
     # double counting correction
     if same:
-        zztheta[0][0] -= np.sum(catalog[start:end, 3]**2)
-        zztheta[1][0] -= end - start
         zztheta = zztheta / 2.
     return zztheta
