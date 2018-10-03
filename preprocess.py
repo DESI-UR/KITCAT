@@ -50,6 +50,11 @@ if __name__ == '__main__':
         return params
 
     args = parse_command_line()
+    general_params = lio.parse_config(args.config, 'GENERAL')
+    same = not general_params['x_correlation']
+    print('')
+    messg = 'self correlation' if same else 'cross correlation'
+    print('mode: %s' %messg)
 
     # check if arguments are valid
     if args.islice < 0 or args.islice >= args.nslice:
@@ -90,7 +95,6 @@ if __name__ == '__main__':
     # initialize catalog
     print('')
     print('initialize catalog')
-    same = True
     d1_params = lio.parse_config(args.config, 'GALAXY_1')
     d2_params = lio.parse_config(args.config, 'GALAXY_2')
     r1_params = lio.parse_config(args.config, 'RANDOM_1')
@@ -156,7 +160,7 @@ if __name__ == '__main__':
         dd_tree_catalog = d2.get_catalog()
     else:
         dd_pair_catalog = d2.get_catalog()
-        dd_pair_catalog = d1.get_catalog()
+        dd_tree_catalog = d1.get_catalog()
 
     # set up catalog and tree for DR(s)
     print('')

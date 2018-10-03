@@ -6,14 +6,55 @@ import configparser
 
 from lib.cosmology import Cosmology
 
+
+DEFAULTS = {
+    'GENERAL': {'x_correlation': 'False'},
+    'DATA': {
+        'path': 'catalog/galaxies_DR9_CMASS_North.fits',
+        'ra': 'ra',
+        'dec': 'dec',
+        'z': 'z',
+        },
+    'NBINS': {
+        'ra': '624',
+        'dec': '245',
+        'theta': '100',
+        'z': '593',
+        's': '50',
+        },
+    'LIMIT': {
+        'unit': 'deg',
+        'ra_min': '108',
+        'ra_max': '264',
+        'dec_min': '-4',
+        'dec_max': '57',
+        'z_min': '0.43',
+        'z_max': '0.7',
+        },
+    'COSMOLOGY': {
+        'hubble0': '100',
+        'omega_m0': 0.307,
+        'omega_de0': 0.693,
+        }
+    }
+
 def parse_config(config_file, section):
     """ parse config file into a dictionary """
-    parser = configparser.RawConfigParser(os.environ)
+
+    if section in ('GALAXY_1', 'GALAXY_2', 'RANDOM_1', 'RANDOM_2'):
+        default = DEFAULTS['DATA']
+    else:
+        default = DEFAULTS[section]
+    default.update(os.environ)
+
+    parser = configparser.RawConfigParser(default)
     parser.read(config_file)
 
     params_dict = {}
 
-    if section in ["GALAXY_1", "GALAXY_2", "RANDOM_1", "RANDOM_2"]:
+    if section == "GENERAL":
+        params_dict['x_correlation'] = parser.getboolean(section, 'x_correlation')
+    elif section in ["GALAXY_1", "GALAXY_2", "RANDOM_1", "RANDOM_2"]:
         params_dict['path'] = parser.get(section, 'path')
         params_dict['ra'] = parser.get(section, 'ra')
         params_dict['dec'] = parser.get(section, 'dec')
