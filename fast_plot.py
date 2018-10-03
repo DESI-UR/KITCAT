@@ -52,8 +52,9 @@ if __name__ == '__main__':
 
         # get RR, DR, DD, tpcf and tpcfss
         rr = corr.rr[iw]
-        dr = corr.d1r2[iw]
         dd = corr.dd[iw]
+        d1r2 = corr.d1r2[iw]
+        d2r1 = corr.d2r1[iw]
         tpcf = corr.tpcf[iw]
         tpcfss = corr.tpcfss[iw]
         bins = corr.bins
@@ -66,26 +67,31 @@ if __name__ == '__main__':
                     bins[:-1], bins=bins, weights=rr,
                     histtype='step', label=label)
                 axes[0, 1].hist(
-                    bins[:-1], bins=bins, weights=dr,
-                    histtype='step', label=label)
-                axes[0, 2].hist(
                     bins[:-1], bins=bins, weights=dd,
                     histtype='step', label=label)
-                axes[1, 0].hist(bins[:-1], bins=bins, weights=tpcf,
+                axes[1, 0].hist(
+                    bins[:-1], bins=bins, weights=d1r2,
+                    histtype='step', label=label)
+                axes[1, 1].hist(
+                    bins[:-1], bins=bins, weights=d2r1,
+                    histtype='step', label=label)
+                axes[0, 2].hist(bins[:-1], bins=bins, weights=tpcf,
                                 histtype="step", label=label)
-                axes[1, 1].hist(bins[:-1], bins=bins, weights=tpcfss,
+                axes[1, 2].hist(bins[:-1], bins=bins, weights=tpcfss,
                                 histtype="step", label=label)
             else:
                 s = (bins[:-1]+bins[1:])/2
                 axes[0, 0].scatter(s, rr, label=label, marker='.')
-                axes[0, 1].scatter(s, dr, label=label, marker='.')
-                axes[0, 2].scatter(s, dd, label=label, marker='.')
-                axes[1, 0].scatter(s, tpcf, label=label, marker='.')
-                axes[1, 1].scatter(s, tpcfss, label=label, marker='.')
+                axes[0, 1].scatter(s, dd, label=label, marker='.')
+                axes[1, 0].scatter(s, d1r2, label=label, marker='.')
+                axes[1, 1].scatter(s, d2r1, label=label, marker='.')
+                axes[0, 2].scatter(s, tpcf, label=label, marker='.')
+                axes[1, 2].scatter(s, tpcfss, label=label, marker='.')
         else:
             rr_err = corr.rr_err[iw]
-            dr_err = corr.d1r2_err[iw]
             dd_err = corr.dd_err[iw]
+            d1r2_err = corr.d1r2_err[iw]
+            d2r1_err = corr.d2r1_err[iw]
             tpcf_err = corr.tpcf_err[iw]
             tpcfss_err = corr.tpcfss_err[iw]
 
@@ -93,19 +99,20 @@ if __name__ == '__main__':
             xerr = (s[1]-s[0])/2
             axes[0, 0].errorbar(s, rr, yerr=rr_err, xerr=xerr,
                                 label=label, fmt='--.')
-            axes[0, 1].errorbar(s, dr, yerr=dr_err, xerr=xerr,
+            axes[0, 1].errorbar(s, dd, yerr=dd_err, xerr=xerr,
                                 label=label, fmt='--.')
-            axes[0, 2].errorbar(s, dd, yerr=dd_err, xerr=xerr,
+            axes[1, 0].errorbar(s, d1r2, yerr=d1r2_err, xerr=xerr,
                                 label=label, fmt='--.')
-            axes[1, 0].errorbar(s, tpcf, yerr=tpcf_err, xerr=xerr,
+            axes[1, 1].errorbar(s, d1r2, yerr=d1r2_err, xerr=xerr,
                                 label=label, fmt='--.')
-            axes[1, 1].errorbar(s, tpcfss, yerr=tpcfss_err, xerr=xerr,
+            axes[0, 2].errorbar(s, tpcf, yerr=tpcf_err, xerr=xerr,
                                 label=label, fmt='--.')
-        axes[1, 2].axis('off')
+            axes[1, 2].errorbar(s, tpcfss, yerr=tpcfss_err, xerr=xerr,
+                                label=label, fmt='--.')
 
     # set plot labels and legends
-    y_label = ["RR(s)", "DR(s)", "DD(s)"] + [r"$\xi(s)$"] + [r"$\xi(s)s^{2}$"]
-    for i, ax in enumerate(axes.flat[:-1]):
+    y_label = ["RR(s)", "DD(s)", r"$\xi(s)$", "D1R2(s)", "D2R1(s)",r"$\xi(s)s^{2}$"]
+    for i, ax in enumerate(axes.flatten()):
         ax.set(xlabel="s [Mpc/h]", ylabel=y_label[i], xlim=(0, 200))
         ax.legend()
     fig.tight_layout()
