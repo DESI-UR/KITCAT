@@ -3,6 +3,8 @@
 # Standard Python module
 import argparse
 
+import numpy as np
+
 # User-defined module
 import lib.io as lio
 import lib.catalog as lcatalog
@@ -119,15 +121,28 @@ if __name__ == '__main__':
     # set up catalog and tree for DR(s)
     print('')
     print('setting up for DR(s)')
-    dr_tree = None
-    dr_catalog = None
+    dr_tree = rand.build_tree()
+    dr_galaxy_catalog = data.get_catalog()
+    dr_random_catalog = rand.get_catalog()
+
+    # set up helper object
+    print('')
+    print('setting up helper object')
+    helper = lhelper.CorrelationHelper()
+    helper.z_distr = rand.z_distr
+    helper.norm_dd = np.array(data.norm())
+    helper.norm_rr = np.array(rand.norm())
+    helper.norm_dr = np.array(rand.norm(data))
 
     # save into pickle file
     save_params = {
         'rr': {'tree': rr_tree, 'catalog': rr_catalog},
         'dd': {'tree': dd_tree, 'catalog': dd_catalog},
-        'dr': {'tree': dr_tree, 'catalog': dr_catalog},
+        'dr': {'tree': dr_tree,
+               'tree_catalog': dr_random_catalog,
+               'pair_catalog': dr_galaxy_catalog,},
         'cosmos_list': cosmos_list,
         'bins': bins,
+        'helper': helper,
     }
     lio.save('%s_preprocess.pkl' % args.prefix, save_params)

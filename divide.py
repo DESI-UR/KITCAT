@@ -33,9 +33,9 @@ if __name__ == "__main__":
                             dest    = 'njob',
                             type    = int)
         parser.add_argument('--time', '-t',
-                            help='save runtime',
-                            action='store_true',
-                            default=False)
+                            help    = 'save runtime',
+                            action  = 'store_true',
+                            default = False)
         params = parser.parse_args()
         return params
 
@@ -52,19 +52,20 @@ if __name__ == "__main__":
 
     # load preprocess data
     preprocess_params = lio.load('%s_preprocess.pkl' % args.prefix)
-    rr_tree = preprocess_params['rr']['tree']
-    rr_catalog = preprocess_params['rr']['catalog']
-    dd_tree = preprocess_params['dd']['tree']
-    dd_catalog = preprocess_params['dd']['catalog']
-    dr_tree = preprocess_params['dr']['tree']
-    dr_catalog = preprocess_params['dr']['catalog']
+    rr_params = preprocess_params['rr']
+    dd_params = preprocess_params['dd']
+    dr_params = preprocess_params['dr']
     bins = preprocess_params['bins']
+    cosmos_list = preprocess_params['cosmos_list']
+    helper = preprocess_params['helper']
 
     # calculate f(theta)
+    print('')
     start_time = time.time()
+    ftheta = None
     ftheta = lanalysis.get_ftheta(
-        catalog = rr_catalog,
-        tree    = rr_tree,
+        catalog     = rr_params['catalog'],
+        tree        = rr_params['tree'],
         theta_max   = bins.max('theta'),
         theta_nbins = bins.num_bins('theta'),
         job_helper  = job_helper,
@@ -72,5 +73,46 @@ if __name__ == "__main__":
     time_rr = time.time()-start_time
     print("--- %f seconds ---" % time_rr)
 
+    # calculate ztheta
+    print('')
+    start_time = time.time()
+    ztheta = None
+    ztheta = lanalysis.get_ztheta(
+        tree_catalog    = dr_params['tree_catalog'],
+        pair_catalog    = dr_params['pair_catalog'],
+        tree            = dr_params['tree'],
+        z_min           = bins.min('z'),
+        z_max           = bins.max('z'),
+        z_nbins         = bins.num_bins('z'),
+        theta_max       = bins.max('theta'),
+        theta_nbins     = bins.num_bins('theta'),
+        job_helper      = job_helper,)
+    time_dr = time.time()-start_time
+    print("--- %f seconds ---" % time_dr)
 
-    # save("%s_divide_%03d.pkl" % (args.prefix, args.ijob), correlation)
+    # calculate zztheta
+    print('')
+    start_time = time.time()
+    zztheta = None
+    zztheta = lanalysis.get_zztheta(
+        catalog         = dd_params['catalog'],
+        tree            = dd_params['tree'],
+        z_min           = bins.min('z'),
+        z_max           = bins.max('z'),
+        z_nbins         = bins.num_bins('z'),
+        theta_max       = bins.max('theta'),
+        theta_nbins     = bins.num_bins('theta'),
+        job_helper      = job_helper,
+        same            = True,)
+    time_dd = time.time()-start_time
+    print("--- %f seconds ---" % time_dd)
+
+    # store to helper object
+    helper.ftheta = ftheta
+    helper.ztheta = ztheta
+    helper.zztheta = zztheta
+    if args.ijob == 0:
+        helper.cosmos_list = cosmos_list
+        helper.bins = bins
+    lio.save("%s_divide_%03d-%03d.pkl" % (args.prefix, args.ijob, args.njob),
+             helper)
