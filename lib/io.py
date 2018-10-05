@@ -4,8 +4,6 @@ import os
 import pickle
 import configparser
 
-from lib.cosmology import Cosmology
-
 
 DEFAULTS = {
     'GENERAL': {'x_correlation': 'False'},

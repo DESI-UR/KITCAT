@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """ Script for combining job results and calculate DD(s), DR(s), and RR(s) """
 
 # Standard Python module
@@ -15,11 +17,11 @@ if __name__ == "__main__":
 
     def parse_command_line():
         parser = argparse.ArgumentParser(description='integration')
-        parser.add_argument('--prefix', '-p',
+        parser.add_argument('-p', '--prefix',
                             help    = 'output prefix.',
                             dest    = 'prefix',
                             type    = str)
-        parser.add_argument('--output', '-o',
+        parser.add_argument('-o', '--output',
                             help    = 'output name',
                             default = None,
                             dest    = 'output',
@@ -49,8 +51,11 @@ if __name__ == "__main__":
     dd = helper.get_dd()
 
     print('')
-    print('calculate DR(s)')
+    print('calculate D1R2(s)')
     d1r2 = helper.get_dr(mode='r2')
+
+    print('')
+    print('calculate D2R1(s)')
     d2r1 = helper.get_dr(mode='r1')
 
     print('')
@@ -81,3 +86,4 @@ if __name__ == "__main__":
         if not args.output.endswith('.pkl'):
             args.output += '.pkl'
         lio.save(args.output, tpcf_list)
+    print('')

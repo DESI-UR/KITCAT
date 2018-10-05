@@ -41,7 +41,6 @@ def get_dd(
     print('')
     print('calculate DD(s) from index %d to %d' % (start, end - 1))
 
-    w_catalog = catalog[:, 3]
     for i, pt in enumerate(catalog[start:end]):
 
         # print out checkpoint
@@ -57,7 +56,7 @@ def get_dd(
 
         # fill weighted distribution
         # w =  w1 * w2
-        w = w_catalog[index]*pt[3]
+        w = catalog[:, 3][index]*pt[3]
         hist, _ = np.histogram(s, bins=s_nbins, range=(0., s_max), weights=w)
         dd[0] += hist
 

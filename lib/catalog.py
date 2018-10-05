@@ -6,20 +6,25 @@ from astropy.table import Table
 from sklearn.neighbors import BallTree, KDTree
 
 def hist2point(hist, bins_x, bins_y, exclude_zeros=True):
-    """ Convert 2D histogram into a set of weighted data points.
-        Use bincenter as coordinate.
-        Inputs:
-        + hist: ndarray
+    """ convert 2D histogram into a set of weighted data points.
+        use bincenter as coordinate.
+
+        Parameters:
+        -----------
+
+        hist: array of shape (nbins_x, nbins_y)
             2D histogram
-        + bins_x: ndarray
-            Binedges along the  x-axis
-        + bins_y: ndarray
-            Binedges along the y-axis
-        + exclude_zeros: bool (default=True)
-            If True, return non-zero weight points only.
-        Outputs:
-        + catalog: ndarrays
-            Catalog of weighted data points. Format: [X, Y, Weight]"""
+        bins_x: array of shape (nbins_x + 1, )
+            binedges along the  x-axis
+        bins_y: array of shape (nbins_y + 1, )
+            binedges along the y-axis
+        exclude_zeros: bool (default=True)
+            if True, return non-zero weight points only.
+
+        Returns:
+        --------
+        catalog
+        """
 
     # Get bins center and create a grid
     center_x = 0.5*(bins_x[:-1]+bins_x[1:])
@@ -37,7 +42,6 @@ def hist2point(hist, bins_x, bins_y, exclude_zeros=True):
         zeros = (hist == 0)
         return catalog[np.logical_not(zeros)]
     return catalog
-
 
 def get_norm(catalog1, catalog2, same=False):
     """ get normalization constant """

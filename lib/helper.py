@@ -2,15 +2,11 @@
 
 import numpy as np
 
-def distance(theta, r1, r2):
-    """ Calculate distance between two points at radius r1, r2 separated by
-    angle theta """
-    return np.sqrt(r1**2 + r2**2 - 2 * r1 * r2 * np.cos(theta))
-
 class JobHelper(object):
-    """ Class to handle multiprocess job """
+    """ class to handle multiprocess job """
+
     def __init__(self, total_jobs):
-        """ Constructor """
+        """ constructor """
         if total_jobs <= 0:
             raise ValueError('total jobs must be at least 1')
         self.total_jobs = total_jobs
@@ -36,13 +32,7 @@ class JobHelper(object):
             print("job %d/%d" % (self.current_job+1, self.total_jobs))
 
     def get_index_range(self, size):
-        """ Calculate the start and end indices given job size
-        Inputs:
-        + size: int
-            Size of job.
-        Outputs:
-        + job_range: tuple
-            Return the start and end indices """
+        """ calculate the start and end indices given job size """
         job_index = np.floor(np.linspace(0, size, self.total_jobs + 1))
         job_index = job_index.astype(int)
         job_range = (job_index[self.current_job],
@@ -50,7 +40,7 @@ class JobHelper(object):
         return job_range
 
 class CorrelationHelper(object):
-    """ Class to handle multiprocess correlation function calculation """
+    """ class to handle multiprocess correlation function calculation """
 
     def __init__(self):
         """ constructor """
@@ -92,6 +82,8 @@ class CorrelationHelper(object):
         # calculate rr
         # loop over cosmology models
         for i, cosmo in enumerate(self.cosmos_list):
+            cosmo_params = list(cosmo.params.values())
+            print('- h0, om0, ode0: %s' % cosmo_params)
             r = cosmo.z2r(self.bins.bins('z'))
             r = 0.5 * (r[:-1] + r[1:])
 
@@ -112,7 +104,6 @@ class CorrelationHelper(object):
                                            weights = self.z2_distr[j][k]*w)
                     rr[i][j] += hist
 
-        rr = np.squeeze(rr)
         return rr
 
     def get_dr(self, mode='r1'):
@@ -135,6 +126,9 @@ class CorrelationHelper(object):
         # calculate dr
         # loop over cosmology models
         for i, cosmo in enumerate(self.cosmos_list):
+            cosmo_params = list(cosmo.params.values())
+            print('- h0, om0, ode0: %s' % cosmo_params)
+
             r = cosmo.z2r(self.bins.bins('z'))
             r = 0.5 * (r[:-1] + r[1:])
 
@@ -142,7 +136,7 @@ class CorrelationHelper(object):
 
                 w = ztheta[j]
 
-                # Build a 2-d distance matrices
+                # Build a 2-d distance matrix
                 temp = np.cos(theta[:, None]) * r[None, :]
                 r_sq = r[None, :]**2
 
@@ -154,7 +148,6 @@ class CorrelationHelper(object):
                                            weights = z_distr[j][k]*w)
                     dr[i][j] += hist
 
-        dr = np.squeeze(dr)
         return dr
 
     def get_dd(self):
@@ -168,6 +161,8 @@ class CorrelationHelper(object):
         s = self.bins.bins('s')
 
         for i, cosmo in enumerate(self.cosmos_list):
+            cosmo_params = list(cosmo.params.values())
+            print('- h0, om0, ode0: %s' % cosmo_params)
 
             # convert z to r
             r = cosmo.z2r(self.bins.bins('z'))
@@ -184,5 +179,4 @@ class CorrelationHelper(object):
                                                weights = w)
                         dd[i][j] += hist
 
-        dd = np.squeeze(dd)
         return dd

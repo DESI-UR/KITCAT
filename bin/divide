@@ -1,11 +1,14 @@
-""" Script for submitting jobs to calculate DD(s), DR(s), and RR(s) """
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+""" combinatorics """
 
 # Standard Python modules
 import time
 import argparse
 
 # Python modules
-import numpy
+import numpy as np
 
 # User-defined modules
 import lib.io as lio
@@ -13,26 +16,25 @@ import lib.helper as lhelper
 import lib.analysis as lanalysis
 
 if __name__ == "__main__":
-    """ Main"""
     print('')
 
     def parse_command_line():
         parser = argparse.ArgumentParser(description='combinatorics')
-        parser.add_argument('--prefix', '-p',
+        parser.add_argument('-p', '--prefix',
                             help    = 'output prefix.',
                             dest    = 'prefix',
                             type    = str)
-        parser.add_argument('--ijob', '-i',
+        parser.add_argument('-i', '--ijob',
                             help    = 'job index',
                             default = 0,
                             dest    = 'ijob',
                             type    = int)
-        parser.add_argument('--njob', '-n',
+        parser.add_argument('-n', '--njob',
                             help    = 'total number of z-slice',
                             default = 1,
                             dest    = 'njob',
                             type    = int)
-        parser.add_argument('--time', '-t',
+        parser.add_argument('-t', '--time',
                             help    = 'save runtime',
                             action  = 'store_true',
                             default = False)
@@ -137,3 +139,4 @@ if __name__ == "__main__":
         helper.bins = bins
     lio.save("%s_divide_%03d-%03d.pkl" % (args.prefix, args.ijob, args.njob),
              helper)
+    print('')

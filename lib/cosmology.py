@@ -56,9 +56,10 @@ class Cosmology():
         """
         self.model = None
         self.comoving_table = None
-        self.set_model(hubble0      = hubble0,
-                       omega_m0     = omega_m0,
-                       omega_de0    = omega_de0)
+        self.params = {'hubble0': hubble0,
+                       'omega_m0': omega_m0,
+                       'omega_de0': omega_de0}
+        self.set_model(**self.params)
         self._z2r = interpolate.pchip(*self.comoving_table.T)
         self._r2z = interpolate.pchip(*self.comoving_table[:, ::-1].T)
 
