@@ -41,8 +41,7 @@ if __name__ == "__main__":
             helper.add(lio.load(fname))
             continue
         helper = lio.load(fname)
-        import numpy as np
-        helper.ztheta_d1r2 = np.copy(helper.ztheta_d1r2)
+
 
 
     # calculate dd, dr, rr
