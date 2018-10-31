@@ -14,6 +14,7 @@ DEFAULTS = {
         'z': 'z',
         },
     'NBINS': {
+        'auto': 'False',
         'ra': '624',
         'dec': '245',
         'theta': '100',
@@ -65,6 +66,7 @@ def parse_config(config_file, section):
             params_dict['weight_sdc'] = parser.get(section, 'weight_sdc')
             params_dict['weight_cp'] = parser.get(section, 'weight_cp')
     elif section == "NBINS":
+        params_dict['auto'] = parser.getboolean(section, 'auto')
         params_dict['ra'] = parser.getint(section, 'ra')
         params_dict['dec'] = parser.getint(section, 'dec')
         params_dict['theta'] = parser.getint(section, 'theta')

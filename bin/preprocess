@@ -39,16 +39,6 @@ if __name__ == '__main__':
                             default = 1,
                             dest    = 'nslice',
                             type    = int)
-        parser.add_argument('-a', '--auto_binning',
-                            help    = 'enable automatic bins',
-                            action  = 'store_true',
-                            dest    = 'auto_binning',
-                            default = False)
-        parser.add_argument('-b', '--binwidth_distance',
-                            help    = 'binw of s if auto is enabled',
-                            default = 2.00,
-                            dest    = 'binw_s',
-                            type    = float)
         params = parser.parse_args()
         return params
 
@@ -80,20 +70,20 @@ if __name__ == '__main__':
     # set up binning
     print('')
     print('setting up binning')
-    messg = 'auto' if args.auto_binning else 'manual'
-    print('- binning mode: %s' %messg)
 
     limit_params = lio.parse_config(args.config, 'LIMIT')
     nbins_params = lio.parse_config(args.config, 'NBINS')
+
+    messg = 'auto' if nbins_params['auto'] else 'manual'
+    print('- binning mode: %s' %messg)
+
     bins = lbins.Bins(
         limit_params = limit_params,
         nbins_params = nbins_params,
         min_cosmo    = lcosmology.min_cosmo(cosmos_list),
         max_cosmo    = lcosmology.max_cosmo(cosmos_list),
         islice       = args.islice,
-        nslice       = args.nslice,
-        auto_binning = args.auto_binning,
-        binw_s       = args.binw_s)
+        nslice       = args.nslice)
 
     # initialize catalog
     print('')
@@ -107,6 +97,12 @@ if __name__ == '__main__':
     d2 = lcatalog.GalaxyCatalog(d2_params, bins.limit)
     r1 = lcatalog.GalaxyCatalog(r1_params, bins.limit)
     r2 = lcatalog.GalaxyCatalog(r2_params, bins.limit)
+
+    print('- catalog size:')
+    print(' +        d1: %10d' % d1.ngals)
+    print(' +        d2: %10d' % d2.ngals)
+    print(' +        r1: %10d' % r1.ngals)
+    print(' +        r2: %10d' % r2.ngals)
 
     # calculate normalization constant
     norm_dd = lcatalog.get_norm(d1, d2, same=same)

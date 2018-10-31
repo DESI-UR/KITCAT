@@ -11,9 +11,7 @@ class Bins(object):
         min_cosmo    = None,
         max_cosmo    = None,
         islice       = 0,
-        nslice       = 1,
-        auto_binning = None,
-        binw_s       = 2.00):
+        nslice       = 1,):
 
         # set up bin limit
         min_max = limit_params.copy()
@@ -46,10 +44,17 @@ class Bins(object):
 
         # set up number of bins
         self.nbins = {}
+
+        auto_binning = nbins_params['auto']
         if not auto_binning:
-            self.nbins = nbins_params.copy()
+            self.nbins['s'] = nbins_params['s']
+            self.nbins['dec'] = nbins_params['dec']
+            self.nbins['ra'] = nbins_params['ra']
+            self.nbins['z'] = nbins_params['z']
+            self.nbins['theta'] = nbins_params['theta']
         else:
-            self._set_auto_nbins(min_cosmo, binw_s)
+            self.nbins['s'] = nbins_params['s']
+            self._set_auto_nbins(min_cosmo)
 
         # Print out number of bins
         self.print_info()
@@ -64,11 +69,11 @@ class Bins(object):
                 return False
         return True
 
-    def _set_auto_nbins(self, cosmo, binw_s):
+    def _set_auto_nbins(self, cosmo):
         """ Set number of bins based on binwidths """
 
         # Separation
-        self.nbins['s'], binw_s = self._find_nbins('s', binw_s)
+        binw_s = (self.max('s') - self.min('s')) /self.num_bins('s')
 
         # Redshift/Comoving distance distribution
         binw_r = binw_s/2.
