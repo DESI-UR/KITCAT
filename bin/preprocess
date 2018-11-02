@@ -27,6 +27,7 @@ if __name__ == '__main__':
                             type    = str)
         parser.add_argument( '-p', '--prefix',
                             help    = 'output prefix',
+                            default = 'output/default',
                             dest    = 'prefix',
                             type    = str)
         parser.add_argument('-i', '--islice',
