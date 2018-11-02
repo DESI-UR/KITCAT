@@ -38,7 +38,8 @@ if __name__ == "__main__":
     cos_2 = np.cos(theta/2.)
     r = cosmo.z2r(bins.bins('z'))
     r = 0.5 * (r[:-1] + r[1:])
-    s = np.linspace(0, 200, 51)
+    s = bins.bins('s')
+    n = bins.num_bins('s')
 
     ftheta = helper.ftheta
     ztheta = helper.ztheta_d1r2[0]
@@ -47,7 +48,7 @@ if __name__ == "__main__":
 
     # calculate rr
     # create the weight matrix
-    rr = np.zeros((50, 50))
+    rr = np.zeros((n, n))
     w = ftheta[:, None]*z_distr[None, :]
     for k, pt_r in enumerate(r):
         sigma = sin_2[:, None]*(pt_r + r[None, :])
@@ -58,7 +59,7 @@ if __name__ == "__main__":
         rr += hist
 
     # calculate dr
-    dr = np.zeros((50, 50))
+    dr = np.zeros((n, n))
     for k, pt_r in enumerate(r):
         sigma = sin_2[:, None]*(pt_r + r[None, :])
         pi = cos_2[:, None]*np.abs(pt_r - r[None, :])
@@ -67,7 +68,7 @@ if __name__ == "__main__":
                                     weights=ztheta.ravel()*z_distr[k])
         dr += hist
 
-    dd = np.zeros((50, 50))
+    dd = np.zeros((n, n))
     for k, pt_r in enumerate(r):
         sigma = sin_2[:, None]*(pt_r + r[None, :])
         pi = cos_2[:, None]*np.abs(pt_r - r[None, :])
