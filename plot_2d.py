@@ -61,8 +61,10 @@ if __name__ == '__main__':
         norm_dd     = norm['dd'],
         norm_d1r2   = norm['d1r2'],
         norm_d2r1   = norm['d2r1'])
-    tpcfss = tpcf * s**2
-    tpcfss_err = tpcf_err * s**2
+    ss = s[:, None] * s[None, :]
+    ss = ss.reshape(1, ss.shape[0], ss.shape[1])
+    tpcfss = tpcf * ss
+    tpcfss_err = tpcf_err * ss
 
     # create figure and subplots
     fig, axes = plt.subplots(1, 2, figsize=(12, 8))
