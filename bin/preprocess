@@ -149,7 +149,9 @@ if __name__ == '__main__':
     else:
         rr_pair_catalog = r2.get_catalog()
         rr_tree_catalog = r1.get_catalog()
-
+    rr_dict = {'tree': rr_tree,
+               'tree_catalog': rr_tree_catalog,
+               'pair_catalog': rr_pair_catalog}
 
     # set up catalog and tree for DD(s)
     print('')
@@ -161,6 +163,9 @@ if __name__ == '__main__':
     else:
         dd_pair_catalog = d2.get_catalog()
         dd_tree_catalog = d1.get_catalog()
+    dd_dict = {'tree':dd_tree,
+               'tree_catalog': dd_tree_catalog,
+               'pair_catalog': dd_pair_catalog}
 
     # set up catalog and tree for DR(s)
     print('')
@@ -168,9 +173,18 @@ if __name__ == '__main__':
     d1r2_tree = r2.build_tree()
     d1r2_pair_catalog = d1.get_catalog()
     d1r2_tree_catalog = r2.get_catalog()
-    d2r1_tree = r1.build_tree()
-    d2r1_pair_catalog = d2.get_catalog()
-    d2r1_tree_catalog = r1.get_catalog()
+    d1r2_dict = {'tree': d1r2_tree,
+                 'tree_catalog': d1r2_tree_catalog,
+                 'pair_catalog': d1r2_pair_catalog}
+    if same:
+        d2r1_dict = None
+    else:
+        d2r1_tree = r1.build_tree()
+        d2r1_pair_catalog = d2.get_catalog()
+        d2r1_tree_catalog = r1.get_catalog()
+        d2r1_dict = {'tree': d2r1_tree,
+                     'tree_catalog': d2r1_tree_catalog,
+                     'pair_catalog': d2r1_pair_catalog}
 
     # set up helper object
     print('')
@@ -185,22 +199,13 @@ if __name__ == '__main__':
 
     # save into pickle file
     save_params = {
-        'rr': {'tree': rr_tree,
-               'tree_catalog': rr_tree_catalog,
-               'pair_catalog': rr_pair_catalog},
-        'dd': {'tree':dd_tree,
-               'tree_catalog': dd_tree_catalog,
-               'pair_catalog': dd_pair_catalog},
-        'd1r2': {'tree': d1r2_tree,
-               'tree_catalog': d1r2_tree_catalog,
-               'pair_catalog': d1r2_pair_catalog,},
-        'd2r1': {'tree': d2r1_tree,
-               'tree_catalog': d2r1_tree_catalog,
-               'pair_catalog': d2r1_pair_catalog,},
+        'rr': rr_dict,
+        'dd': dd_dict,
+        'd1r2': d1r2_dict,
+        'd2r1': d2r1_dict,
         'cosmos_list': cosmos_list,
         'bins': bins,
         'helper': helper,
-        'same': same
     }
 
     # create folder if folder does not exist

@@ -3,58 +3,51 @@
 # Python modules
 import numpy as np
 
-class Correlation(object):
-    """ class to handle correlation function """
+def tpcf(rr, dd, d1r2, d2r1, norm_rr, norm_dd, norm_d1r2, norm_d2r1):
+    """ Calculate 1d or 2d tpcf
 
-    def __init__(
-        self,
-        rr          = None,
-        dd          = None,
-        d1r2        = None,
-        d2r1        = None,
-        bins        = None,
-        norm_rr     = 1.,
-        norm_dd     = 1.,
-        norm_d1r2   = 1.,
-        norm_d2r1   = 1.):
-        """ constructor """
+    Arguments:
+    ----------
+    rr, dd, d1r2, d2r1: array of shape (2, n, 1) or (2, n, n)
+        Unormalized distribution
+    norm_rr, norm_dd, norm_d1r2, norm_d2r1: (2, )
+        Normalization factor
 
-        # store parameters
-        self.rr = rr
-        self.dd = dd
-        self.d1r2 = d1r2
-        self.d2r1 = d2r1
-        self.bins = bins
-        self.norm_rr = norm_rr.reshape(-1, 1)
-        self.norm_dd = norm_dd.reshape(-1, 1)
-        self.norm_d1r2 = norm_d1r2.reshape(-1, 1)
-        self.norm_d2r1 = norm_d2r1.reshape(-1, 1)
+    Returns:
+    --------
+    xi: array of shape (2, n, 1) or (2, n, n)
+        two-point correlation function
+    xi_err: array of shape (2, n, 1) or (2, n, n)
+        statistical error of the two-point correlation
+    """
 
-        # normalize
-        self.rr /= self.norm_rr
-        self.dd /= self.norm_dd
-        self.d1r2 /= self.norm_d1r2
-        self.d2r1 /= self.norm_d2r1
+    # normalize
+    norm_rr = norm_rr.reshape(2, 1, 1)
+    norm_dd = norm_dd.reshape(2, 1, 1)
+    norm_d1r2 = norm_d1r2.reshape(2, 1, 1)
+    norm_d2r1 = norm_d2r1.reshape(2, 1, 1)
 
-        # calculate error
-        self.rr_err = self.get_error(rr) # / self.norm_rr
-        self.dd_err = self.get_error(dd) # / self.norm_dd
-        self.d1r2_err = self.get_error(d1r2) # / self.norm_dr
-        self.d2r1_err = self.get_error(d2r1) # / self.norm_dr
+    rr /= norm_rr
+    dd /= norm_dd
+    d1r2 /= norm_d1r2
+    d2r1 /= norm_d2r1
 
-        # calculate tpcf
-        s = 0.5*(self.bins[1:] + self.bins[:-1])
-        self.tpcf = self.dd - self.d1r2 - self.d2r1 + self.rr
-        self.tpcf = np.where(self.rr != 0, self.tpcf / self.rr, 0)
-        self.tpcf_err = self.dd_err/self.rr
+    # calculate error
+    rr_err = get_error(rr) / norm_rr
+    dd_err = get_error(dd) / norm_dd
+    d1r2_err = get_error(d1r2) / norm_d1r2
+    d2r1_err = get_error(d2r1) / norm_d2r1
 
-        # calculate tpcf s^2
-        self.tpcfss = self.tpcf * s**2
-        self.tpcfss_err = self.tpcf_err * s**2
+    # calculate tpcf
+    xi = dd - d1r2 -d2r1 + rr
+    xi = np.where(rr != 0, xi/rr, 0)
+    xi_err = dd_err/rr
 
-    def get_error(self, distr):
-        """ calculate error for rr, dr, dd """
-        err = np.zeros_like(distr)
-        err[1] = np.sqrt(distr[1])
-        err[0] = np.where(err[1] > 0, distr[0]/err[1], 0)
-        return err
+    return xi, xi_err
+
+def get_error(dist):
+    """ calculate error for rr, dr, dd """
+    err = np.zeros_like(dist)
+    err[1] = np.sqrt(dist[1])
+    err[0] = np.where(err[1] > 0, dist[0]/err[1], 0)
+    return err

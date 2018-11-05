@@ -62,7 +62,7 @@ if __name__ == "__main__":
     bins = preprocess_params['bins']
     cosmos_list = preprocess_params['cosmos_list']
     helper = preprocess_params['helper']
-    same = preprocess_params['same']
+    same = (d2r1_params is None)
 
     # calculate f(theta)
     print('')
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     print("--- %f seconds ---" % time_d1r2)
 
     if same:
-        ztheta_d2r1 = np.copy(ztheta_d1r2)
+        ztheta_d2r1 = None
     else:
         print('')
         start_time = time.time()

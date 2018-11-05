@@ -42,47 +42,47 @@ if __name__ == "__main__":
             continue
         helper = lio.load(fname)
 
-
-
     # calculate dd, dr, rr
     print('')
     print('calculate DD(s)')
-    dd = helper.get_dd()
+    dd_1d, dd_2d = helper.get_dd()
 
     print('')
     print('calculate D1R2(s)')
-    d1r2 = helper.get_dr(mode='r2')
+    d1r2_1d, d1r2_2d = helper.get_dr(mode='r2')
 
     print('')
     print('calculate D2R1(s)')
-    d2r1 = helper.get_dr(mode='r1')
+    if helper.ztheta_d2r1 is not None:
+        d2r1_1d, d2r1_2d = helper.get_dr(mode='r1')
+    else:
+        d2r1_1d, d2r1_2d = d1r2_1d.copy(), d1r2_2d.copy()
 
     print('')
     print('calculate RR(s)')
-    rr = helper.get_rr()
+    rr_1d, rr_2d = helper.get_rr()
 
-    # calculate tpcf
-    print('')
-    print('calculate tpcf')
-    tpcf_list = []
-    for i in range(dd.shape[0]):
-        tpcf = lcorrelation.Correlation(
-            dd          = dd[i],
-            rr          = rr[i],
-            d1r2        = d1r2[i],
-            d2r1        = d2r1[i],
-            bins        = helper.bins.bins('s'),
-            norm_rr     = helper.norm_rr,
-            norm_dd     = helper.norm_dd,
-            norm_d1r2   = helper.norm_d1r2,
-            norm_d2r1   = helper.norm_d2r1)
-        tpcf_list.append(tpcf)
-
-    # save output
+    # save results
     if args.output is None:
-        lio.save('%s_output.pkl' % args.prefix, tpcf_list)
+        output_fname = '%s_output.pkl' % args.prefix
     else:
         if not args.output.endswith('.pkl'):
             args.output += '.pkl'
-        lio.save(args.output, tpcf_list)
+        output_fname = args.output
+    lio.save(
+        output_fname,
+        {'s': helper.bins.bins('s'),
+         'n_cosmos': rr_1d.shape[0],
+         'norm': {'rr': helper.norm_rr,
+                  'dd': helper.norm_dd,
+                  'd1r2': helper.norm_d1r2,
+                  'd2r1': helper.norm_d2r1},
+         '1d': {'rr': rr_1d,
+                'dd': dd_1d,
+                'd1r2': d1r2_1d,
+                'd2r1': d2r1_1d},
+         '2d': {'rr': rr_2d,
+                'dd': dd_2d,
+                'd1r2': d1r2_2d,
+                'd2r1': d2r1_2d}})
     print('')
