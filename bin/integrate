@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+""" Script for combining job results and calculate DD(s), DR(s), and RR(s) """
+
+# Standard Python module
+import argparse
+import glob
+
+# User-defined module
+import lib.io as lio
+import lib.correlation as lcorrelation
+
+if __name__ == "__main__":
+    """ integration """
+
+    print('')
+
+    def parse_command_line():
+        parser = argparse.ArgumentParser(description='integration')
+        parser.add_argument('-p', '--prefix',
+                            help    = 'output prefix.',
+                            dest    = 'prefix',
+                            type    = str)
+        parser.add_argument('-o', '--output',
+                            help    = 'output name',
+                            default = None,
+                            dest    = 'output',
+                            type    = str)
+        params = parser.parse_args()
+        return params
+
+    args = parse_command_line()
+
+    # read in helper
+    print('reading file')
+    helper = lio.load("%s_combine.pkl" % args.prefix)
+
+    # calculate dd, dr, rr
+    print('')
+    print('calculate DD(s)')
+    dd_1d, dd_2d = helper.get_dd()
+
+    print('')
+    print('calculate D1R2(s)')
+    d1r2_1d, d1r2_2d = helper.get_dr(mode='r2')
+
+    print('')
+    print('calculate D2R1(s)')
+    if helper.ztheta_d2r1 is not None:
+        d2r1_1d, d2r1_2d = helper.get_dr(mode='r1')
+    else:
+        d2r1_1d, d2r1_2d = d1r2_1d.copy(), d1r2_2d.copy()
+
+    print('')
+    print('calculate RR(s)')
+    rr_1d, rr_2d = helper.get_rr()
+
+    # save results
+    if args.output is None:
+        output_fname = '%s_output.pkl' % args.prefix
+    else:
+        if not args.output.endswith('.pkl'):
+            args.output += '.pkl'
+        output_fname = args.output
+    lio.save(
+        output_fname,
+        {'s': helper.bins.bins('s'),
+         'n_cosmos': rr_1d.shape[0],
+         'norm': {'rr': helper.norm_rr,
+                  'dd': helper.norm_dd,
+                  'd1r2': helper.norm_d1r2,
+                  'd2r1': helper.norm_d2r1},
+         '1d': {'rr': rr_1d,
+                'dd': dd_1d,
+                'd1r2': d1r2_1d,
+                'd2r1': d2r1_1d},
+         '2d': {'rr': rr_2d,
+                'dd': dd_2d,
+                'd1r2': d1r2_2d,
+                'd2r1': d2r1_2d}})
+    print('')
