@@ -10,6 +10,10 @@ import argparse
 # Python modules
 import numpy as np
 
+## THIS IS TEMPORARILY ADDED TO RUN LOCALLY ##
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 # User-defined modules
 import lib.io as lio
 import lib.helper as lhelper

@@ -8,6 +8,9 @@ import argparse
 
 import numpy as np
 
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 # User-defined module
 import lib.io as lio
 import lib.catalog as lcatalog

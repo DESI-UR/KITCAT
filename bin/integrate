@@ -6,9 +6,13 @@
 import argparse
 import glob
 
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 # User-defined module
 import lib.io as lio
 import lib.correlation as lcorrelation
+import lib.cosmology as lcosmology
 
 if __name__ == "__main__":
     """ integration """
@@ -26,6 +30,11 @@ if __name__ == "__main__":
                             default = None,
                             dest    = 'output',
                             type    = str)
+        parser.add_argument('-c', '--cosmo',
+                            help    = "replace cosmology model",
+                            dest    = 'config',
+                            type    = str,
+                            default = '')
         params = parser.parse_args()
         return params
 
@@ -34,6 +43,25 @@ if __name__ == "__main__":
     # read in helper
     print('reading file')
     helper = lio.load("%s_combine.pkl" % args.prefix)
+
+    # if new configuration is provided for different cosmologies
+    # update the cosmological models in helper
+
+    print(args.config)
+    if len(args.config)>0:
+        print("changing the cosmology according to {}".format(args.config))
+        cosmos_params = lio.parse_config(args.config, 'COSMOLOGY')
+        cosmos_list = []
+        for i in range(cosmos_params['n_cosmos']):
+            hubble0 = cosmos_params['hubble0'][i]
+            omega_m0 = cosmos_params['omega_m0'][i]
+            omega_de0 = cosmos_params['omega_de0'][i]
+            cosmos_list.append(lcosmology.Cosmology(hubble0   = hubble0,
+                                                    omega_m0  = omega_m0,
+                                                    omega_de0 = omega_de0))
+        helper.cosmos_list = cosmos_list
+
+    print(len(helper.cosmos_list))
 
     # calculate dd, dr, rr
     print('')
