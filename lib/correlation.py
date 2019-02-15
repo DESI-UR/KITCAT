@@ -27,17 +27,17 @@ def tpcf(rr, dd, d1r2, d2r1, norm_rr, norm_dd, norm_d1r2, norm_d2r1):
     norm_d1r2 = norm_d1r2.reshape(2, 1, 1)
     norm_d2r1 = norm_d2r1.reshape(2, 1, 1)
 
-    rr /= norm_rr
-    dd /= norm_dd
-    d1r2 /= norm_d1r2
-    d2r1 /= norm_d2r1
-
     # calculate error
     rr_err = get_error(rr) / norm_rr
     dd_err = get_error(dd) / norm_dd
     d1r2_err = get_error(d1r2) / norm_d1r2
     d2r1_err = get_error(d2r1) / norm_d2r1
 
+    rr /= norm_rr
+    dd /= norm_dd
+    d1r2 /= norm_d1r2
+    d2r1 /= norm_d2r1
+    
     # calculate tpcf
     xi = dd - d1r2 -d2r1 + rr
     xi = np.where(rr != 0, xi/rr, 0)
