@@ -230,7 +230,7 @@ Pending
 
 ## Authors
 * **Tri Nguyen**
-* **[Tolga Yapici](tyapici@ur.rochester.edu)**
+* **[Tolga Yapici](mailto:tyapici@ur.rochester.edu)**
 * **[Regina Demina](http://www.pas.rochester.edu/~regina/)** 
 * **[Segev BenZvi](https://www.pas.rochester.edu/~sybenzvi/)**
 
