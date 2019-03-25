@@ -16,15 +16,19 @@ import sys
 from distutils.command.sdist import sdist as DistutilsSdist
 from setuptools import setup, find_packages
 from setuptools.command.install import install as InstallCommand
-from py.paramock import versioning as ver
+from py.KITCAT import versioning as ver
 
 class Install(InstallCommand):
     """ Customized setuptools install command which uses pip."""
     def run(self, *args, **kwargs):
-        from pip._internal import main
+        try:
+            # for older versions of pip
+            from pip._internal import main
+        except:
+            # for newer versions of pip
+            from pip import main
         main(['install', '.'])
         InstallCommand.run(self, *args, **kwargs)
-
 #
 # Begin setup
 #
@@ -56,12 +60,12 @@ if os.path.isdir('bin'):
         if not os.path.basename(fname).endswith('.rst')]
 
 setup_keywords['provides'] = [setup_keywords['name']]
-setup_keywords['requires'] = ['Python (>3.5)', 'numpy (>=1.13.1)', 'configparser (>=3.5)', \
-                              'astropy (>=1.2.1)', 'scipy (>=0.19.1)', 'matplotlib (>=2.0.0)',\
-                              'scikit-learn (>0.18.1)']
+#setup_keywords['requires'] = ['Python (>3.5)', 'numpy (>=1.13.1)', 'configparser (>=3.5)', \
+#                              'astropy (>=1.2.1)', 'scipy (>=0.19.1)', 'matplotlib (>=2.0.0)', \
+#                              "scikit-learn (>=0.18.1)"]
 setup_keywords['install_requires'] = ['healpy>=1.11.0', 'numpy>=1.13.1', 'configparser>=3.5', \
-                                      'astropy>=1.2.1', 'scipy>=0.19.1', 'matplotlib>=2.0.0',\
-                                      'scikit-learn>0.18.1)']
+                                      'astropy>=1.2.1', 'scipy>=0.19.1', 'matplotlib>=2.0.0', \
+                                      'scikit-learn>=0.18.1']
 setup_keywords['zip_safe'] = False
 setup_keywords['use_2to3'] = True
 setup_keywords['packages'] = find_packages('py')
@@ -70,7 +74,7 @@ setup_keywords['cmdclass'] = {'install': Install,}
 
 # Add internal data directories.
 #
-#setup_keywords['package_data'] = {'KITCAT': ['data/*',]}
+setup_keywords['package_data'] = {'KITCAT': ['data/*',]}
 
 # Run setup command.
 #
