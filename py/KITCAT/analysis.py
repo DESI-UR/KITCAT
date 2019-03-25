@@ -1,8 +1,5 @@
-
-
 import numpy as np
-from lib.helper import JobHelper
-
+from helper import JobHelper
 
 def get_dd(
     catalog, tree,
