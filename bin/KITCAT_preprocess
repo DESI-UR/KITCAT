@@ -8,20 +8,11 @@ import argparse
 
 import numpy as np
 
-#import sys
-#sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
-# User-defined module
 from KITCAT import io as lio
-#import lib.io as lio
 from KITCAT import catalog as lcatalog
-#import lib.catalog as lcatalog
 from KITKAT import helper as lhelper
-#import lib.helper as lhelper
 from KITCAT import bins as lbins
-#import lib.bins as lbins
 from KITCAT import cosmology as lcosmology
-#import lib.cosmology as lcosmology
 
 if __name__ == '__main__':
     """ preprocess data: convert catalogs, binning, cosmology into a data structure
