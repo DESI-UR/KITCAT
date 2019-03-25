@@ -10,7 +10,7 @@ import numpy as np
 
 from KITCAT import io as lio
 from KITCAT import catalog as lcatalog
-from KITKAT import helper as lhelper
+from KITCAT import helper as lhelper
 from KITCAT import bins as lbins
 from KITCAT import cosmology as lcosmology
 
