@@ -7,9 +7,9 @@ then
     echo "Updating the version file for python $python_version only"
     git config --global user.email "travis@travis-ci.org"
     git config --global user.name "Travis CI"
-    git clone https://${GH_TOKEN}@github.com/DESI-UR/catalog_generation.git -b development catgen-dev
+    git clone https://${GH_TOKEN}@github.com/DESI-UR/KITCAT.git -b dev kitcat-dev
     cd catgen-dev
-    python py/paramock/versioning.py
-    git commit -m '[skip travis] after the successful build, updating the version number' py/paramock/_version.py
+    python py/KITCAT/versioning.py
+    git commit -m '[skip travis] after the successful build, updating the version number' py/KITCAT/_version.py
     git push
 fi
