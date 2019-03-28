@@ -30,26 +30,33 @@ Installation and running instructions.
 
 ### Requirements
 Python requirements:
-* [Python](https://www.python.org/) (version 3.5.2)
-* [AstroPy](http://www.astropy.org) (version 1.2.1)
-* [NumPy](http://www.numpy.org) (version 1.13.1)
-* [SciPy](https://github.com/scipy/scipy) (version 0.19.1)
-* [Scikit-Learn](http://scikit-learn.org/stable/) (version 0.18.1)
-* [Matplotlib](https://matplotlib.org/) (Optional) (version 2.0.0)
+* [Python](https://www.python.org/) (version >3.5.2)
+* [AstroPy](http://www.astropy.org) (version >1.2.1)
+* [NumPy](http://www.numpy.org) (version >1.13.1)
+* [SciPy](https://github.com/scipy/scipy) (version >0.19.1)
+* [Scikit-Learn](http://scikit-learn.org/stable/) (version >0.18.1)
+* [Matplotlib](https://matplotlib.org/) (Optional) (version >2.0.0)
 
 The sample configurations file rely on DR9-SDSS BOSS survey:
 * [SDSS archive](http://www.sdss3.org/dr9/data_access/)
 
 
 ### Installing
-Clone the repository:
+To avoid any possible package conflicts, it is strongly encouraged to create a clean `conda` environment. `conda` installation instructions can be found at this [link](https://docs.conda.io/projects/conda/en/latest/user-guide/install/). The new environment can be created as follows:
 ```
-    git clone -b tribranch https://github.com/sybenzvi/tpcf.git
+conda create -n KITCATenv python=3
 ```
 
-To install all the requirements with pip, simply run:
+Then, KITCAT conda environment can be loaded with:
 ```
-    pip3 install -r requirements.txt
+source activate KITCATenv
+```
+
+To install KITCAT in the environment:
+```
+git clone https://github.com/DESI-UR/KITCAT
+cd KITCAT
+python setup.py install
 ```
 
 ## Running
