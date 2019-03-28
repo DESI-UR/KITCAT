@@ -38,13 +38,11 @@ setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages('py')
 setup_keywords['package_dir'] = {'': 'py'}
 setup_keywords['provides'] = [setup_keywords['name']]
-setup_keywords['install_requires'] = ['numpy>=1.13.1', 
-                                      'healpy>=1.11.0',
-                                      'configparser>=3.5',
-                                      'astropy>=1.2.1',
-                                      'scipy>=0.19.1',
-                                      'matplotlib==2',
-                                      'scikit-learn>=0.18.1']
+setup_keywords['install_requires'] = []
+#setup_keywords['requires'] = []
+for line in open("requirements.txt", "r"):
+    setup_keywords['install_requires'].append("{}".format(line))
+
 #
 # END OF SETTINGS THAT NEED TO BE CHANGED.
 #

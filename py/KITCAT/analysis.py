@@ -1,5 +1,5 @@
 import numpy as np
-from helper import JobHelper
+from KITCAT.helper import JobHelper
 
 def get_dd(
     catalog, tree,
