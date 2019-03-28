@@ -15,7 +15,15 @@ import sys
 #
 from distutils.command.sdist import sdist as DistutilsSdist
 from setuptools import setup, find_packages
+from setuptools.command.install import install as InstallCommand
 import py.KITCAT.versioning as ver
+
+class Install(InstallCommand):
+    """ Customized setuptools install command which uses pip. """
+    def run(self, *args, **kwargs):
+        import pip
+        pip.main(['install', '.'])
+        InstallCommand.run(self, *args, **kwargs)
 
 #
 # Begin setup
@@ -32,16 +40,20 @@ setup_keywords['author_email'] = 'tnguy51@u.rochester.edu, tyapici@ur.rochester.
 setup_keywords['license'] = 'BSD'
 setup_keywords['url'] = 'https://github.com/DESI-UR/KITCAT'
 setup_keywords['version'] = ver.get_version(out_type='string')
-setup_keywords['requires'] = ['Python (>3.5)']
+setup_keywords['requires'] = ['Python (>=3.5)']
 setup_keywords['zip_safe'] = False
 setup_keywords['use_2to3'] = False
 setup_keywords['packages'] = find_packages('py')
 setup_keywords['package_dir'] = {'': 'py'}
 setup_keywords['provides'] = [setup_keywords['name']]
 setup_keywords['install_requires'] = []
-#setup_keywords['requires'] = []
 for line in open("requirements.txt", "r"):
+    #package_name, package_version = line.split(">=")
+    #if package_name != "scikit-learn":
+    #    setup_keywords['requires'].append('{} (>={})'.format(package_name.strip(), package_version.strip()))
+    #else:
     setup_keywords['install_requires'].append("{}".format(line))
+setup_keywords['cmdclass'] = {'install': Install,}
 
 #
 # END OF SETTINGS THAT NEED TO BE CHANGED.

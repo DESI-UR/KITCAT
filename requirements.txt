@@ -3,5 +3,5 @@ healpy>=1.11.0
 configparser>=3.5
 astropy>=1.2.1
 scipy>=0.19.1
-matplotlib==2
+matplotlib>=2.0.0
 scikit-learn>=0.18.1
