@@ -8,8 +8,8 @@ A Python implementation of the algorithm described in [A Computationally Efficie
   * [Installing](#installing)
 - [Running](#running)
   * [Preprocess](#preprocess)
-  * [Divide Job](#divide)
-  * [Combine Job](#combine)
+  * [Combinatorial](#combinatorial)
+  * [Integration](#integration)
   * [Plot Output](#plot_output)
 - [Configuration File](#configuration-file)
   * [GALAXY Section](#galaxy-section)
@@ -91,11 +91,11 @@ Example:
 
 The following command: 
 ```
-    python3 preprocess.py --config=/path/to/sample_conf.cfg --prefix=/path/to/sample_run --islice=0 --nslice=3 
+    KITCAT_preprocess --config=/path/to/sample_conf.cfg --prefix=/path/to/sample_run --islice=0 --nslice=3 
 ```
 will use configuration file at "/path/to/sample_config.cfg". Divide catalogs into 3 redshift slice (z-slice) and process the first slice. The preprocess output will be "sample_run_preprocess.py". 
 
-### Divide
+### Combinatorial
 Calculate f(theta), g(theta, z) and DD(s) from preprocess output. This is the most computationally-expensive part of the algorithm. The calculation can be divided into multiple equal-sized child processes. Note: skip the calculation of DD(s) if multiple cosmological models are given in configuration file in PREPROCESS. 
 
 Options:
@@ -117,19 +117,22 @@ Example:
 
 The following commmand:
 ```
-    python3 divide.py --prefix=/path/to/sample_run --ijob=0 --njob=10
+    KITCAT_combinatorial --prefix=/path/to/sample_run --ijob=0 --njob=10
 ```
 will take preprocess output "/path/to/sample_run_preprocess.pkl". Divide the calculation into 10 child processes and run the first process. The output will be stored at "/path/to/sample_run_divide_000.pkl", with the last three-digit number being the job index).
 
 To perform the calculation without dividing jobs. Simple run
 ```
-    python3 divide.py --prefix=/path/to/sample_run
+    KITCAT_combinatorial --prefix=/path/to/sample_run
 ```
 
-### Combine
-Combine child processes and perform integration over f(theta), g(theta, r) and P(r) to calculate RR(s), DR(s) and DD(s) (if not already calculated in DIVIDE). Also calculate the t
+Following the combinatorial step, user needs to combine the generated files using:
+```
+    KITCAT_combine --prefix=/path/to/sample_rum
+```
 
-o-point correlation function using the Landy-Szalay estimators.
+### Integration
+Perform integration over f(theta), g(theta, r) and P(r) to calculate RR(s), DR(s) and DD(s) (if not already calculated in DIVIDE). Also calculate the two-point correlation function using the Landy-Szalay estimators.
 
 Options:
     
@@ -147,32 +150,9 @@ Options:
 Example:
 The following command
 ```
-    python3 combine.py --prefix=/path/to/sample_run --output=/path/to/output 
+    KITCAT_integrate --prefix=/path/to/sample_run --output=/path/to/output 
 ```
 will combine all child processes with prefix "/path/to/sample_run_divide_IJOB.pkl". The output RR(s), DR(s), DD(s), and two-point correlation will be stored at "/path/to/output.pkl".
-
-### Plot Output
-A quick Python script is provided to quickly plot DD(s), DR(s), RR(s), and the two-point correlatio output from COMBINE.
-
-Options:
-
-    - Show help message and exit: 
-            -h, --help
-    - Enable plotting unweighted distribution:
-            -u, -U, --unweighted
-    - Enable plotting error bar
-            -e, -E, --error
-    - Path to output file. If not specified, output is not saved and plot is show instead:
-            -o OUTPUT, -O OUTPUT, --output OUTPUT
-    - Show program's version number and exit: 
-            --version
-
-Example:
-The following command
-```
-    python3 fast_plot.py /path/to/output.pkl --output=/path/to/output.png
-```
-will plot output from "/path/to/output.pkl" and save plot to "/path/to/output.png"
 
 ## Configuration File
 This implementation uses Python ConfigParser to read in configuration file. More details on ConfigParser can be found at https://docs.python.org/3/library/configparser.html.
