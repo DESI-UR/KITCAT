@@ -22,7 +22,6 @@ from py.KITCAT import versioning as ver
 class Install(InstallCommand):
     """ Customized setuptools install command which uses pip."""
     def run(self, *args, **kwargs):
-        print("called function with {}".format(args))
         try:
             # for older versions of pip
             from pip._internal import main
@@ -55,6 +54,7 @@ setup_keywords['version'] = ver.get_version(out_type='string')
 
 print("Version is set to {}".format(ver.get_version(out_type='string')))
 
+"""
 # this is a dirty way of installing the dependencies
 # but when I let everything handled by pip/setuptools,
 # the wheel generation spawns thousands of processes and kills
@@ -64,6 +64,7 @@ fid = open('requirements.txt')
 for line in fid:
     print(line)
     pip_install(line)
+"""
 
 #
 # END OF SETTINGS THAT NEED TO BE CHANGED.
@@ -79,21 +80,15 @@ if os.path.isdir('bin'):
         if not os.path.basename(fname).endswith('.rst')]
 
 setup_keywords['provides'] = [setup_keywords['name']]
-#setup_keywords['setup_requires'] = [']
-#setup_keywords['install_requires'] = ['numpy>=1.13.1', 'healpy>=1.11.0', 'configparser>=3.5', \
-#                                      'astropy>=1.2.1', 'scipy>=0.19.1', 'matplotlib>=2.0.0', \
-#                                      'scikit-learn>=0.18.1', 'pip>19.0.0']
+setup_keywords['setup_requires'] = ['numpy>1.13.1']
+setup_keywords['install_requires'] = ['numpy>=1.13.1', 'healpy>=1.11.0', 'configparser>=3.5', \
+                                      'astropy>=1.2.1', 'scipy>=0.19.1', 'matplotlib>=2.0.0', \
+                                      'scikit-learn>=0.18.1']
 setup_keywords['zip_safe'] = False
 setup_keywords['use_2to3'] = True
 setup_keywords['packages'] = find_packages('py')
 setup_keywords['package_dir'] = {'': 'py'}
 #setup_keywords['cmdclass'] = {'install': Install,}
-
-# Add internal data directories.
-#
-#setup_keywords['package_data'] = {'KITCAT': ['data/*',]}
-
-print(setup_keywords)
 
 # Run setup command.
 #
