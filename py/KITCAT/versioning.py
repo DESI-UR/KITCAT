@@ -3,7 +3,6 @@ import os
 import re
 
 file_path = os.path.abspath(os.path.expandvars(os.path.expanduser("./py/KITCAT/_version.py")))
-print(file_path)
 
 def get_version(out_type=None):
     found_version = False
