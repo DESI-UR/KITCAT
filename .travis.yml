@@ -1,0 +1,10 @@
+os:
+- linux
+language: python
+sudo: false
+python:
+- 3.5
+- 3.6
+- 3.7-dev
+install:
+- travis_wait 35 python setup.py install
