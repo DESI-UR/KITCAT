@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/135309125.svg)](https://zenodo.org/badge/latestdoi/135309125)
+
 # Fast Calculation for Galaxy Two-Point Correlations
 
 A Python implementation of the algorithm described in [A Computationally Efficient Approach for Calculating Galaxy Two-Point Correlations](https://arxiv.org/pdf/1611.09892.pdf).
