@@ -1,6 +1,9 @@
 import numpy as np
 from KITCAT.helper import JobHelper
 
+DEG2RAD = np.pi/180.
+RAD2DEG = 1/DEG2RAD
+        
 def get_dd(
     catalog, tree,
     s_max       = 200.,
@@ -261,6 +264,83 @@ def get_zztheta(
         # fill weighted histogram
         # w = w1 * w2
         w = pt[3] * tree_catalog[:, 3][index]
+        hist, _, _  = np.histogram2d(theta, z,
+                                     bins     = nbins,
+                                     range    = bins_range,
+                                     weights  = w)
+        zztheta[0][:, :, iz] += hist
+
+        # fill unweighted histogram
+        hist, _, _  = np.histogram2d(theta, z,
+                                     bins     = nbins,
+                                     range    = bins_range)
+        zztheta[1][:, :, iz] += hist
+
+    # double counting correction
+    if same:
+        zztheta = zztheta / 2.
+    return zztheta
+
+
+def get_zztheta_brute(
+        catalog1, catalog2,
+        z_min       = 0.4,
+        z_max       = 0.7,
+        z_nbins     = 600,
+        theta_max   = 0.18,
+        theta_nbins = 100,
+        job_helper  = None,
+        checkpoint  = 10000,
+        same        = False
+    ):
+    """ calculate f(theta) of catalog and tree.
+
+    Parameters:
+    -----------
+    galaxy_catalog:
+    random_catalog:
+    tree: kd-tree
+    z_min: float
+    z_max: float
+    z_nbins: int
+    theta_max: float
+    theta_nbins: int
+    job_helper:
+    same: bool
+        set True if the tree is built from catalog .
+        if True, will not apply double counting correction.
+
+    Returns:
+    --------
+    zztheta: array of shape (2, theta_nbins, z_nbins, z_nbins) """
+
+    zztheta = np.zeros((2, theta_nbins, z_nbins, z_nbins))
+
+    # if job_helper is None, assume one job
+    if job_helper is None:
+        job_helper = JobHelper(1)
+        job_helper.set_current_job(0, verbose=False)
+    start, end = job_helper.get_index_range(catalog1.shape[0])
+    n = end - start - 1
+
+    nbins = (theta_nbins, z_nbins)
+    bins_range = ((0., theta_max), (z_min, z_max))
+
+    print('')
+    print('calculate zztheta from index %d to %d' % (start, end - 1))
+
+    def calculate_theta(ra1, dec1, ra2, dec2):
+        return np.arccos(np.cos(ra1*DEG2RAD, ra2*DEG2RAD)*np.cos(dec1*DEG2RAD)*np.cos(dec2*DEG2RAD)+
+                         np.sin(dec1*DEG2RAD)*np.sin(dec2*DEG2RAD))*RAD2DEG
+    
+    for i, pt in enumerate(catalog1[start:end]):
+        if i % checkpoint is 0:
+            print('- index: %d/%d' % (i, n))
+        iz = int(z_nbins * (pt[2]-z_min)/(z_max - z_min))
+
+        theta = calculate_theta(pt[0], pt[1], catalog2[:, 0], catalog2[:, 1])
+        z     = catalog2[:, 2]
+        w     = pt[3] * catalog2[:, 3]
         hist, _, _  = np.histogram2d(theta, z,
                                      bins     = nbins,
                                      range    = bins_range,
