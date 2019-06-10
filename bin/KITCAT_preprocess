@@ -57,6 +57,8 @@ if __name__ == '__main__':
     if args.islice < 0 or args.islice >= args.nslice:
         raise ValueError('islice must be at least 0 and less than nslice.')
 
+    is_brute = args.brute
+    
     # set up cosmology
     cosmos_params = lio.parse_config(args.config, 'COSMOLOGY')
     cosmos_list = []
@@ -120,62 +122,40 @@ if __name__ == '__main__':
     print(' + norm_d1r2: %.4e, %.4e' % norm_d1r2)
     print(' + norm_d2r1: %.4e, %.4e' % norm_d2r1)
 
-    # in case of brute for strategy, random catalogs are not converted
-    # but kept as their are.
-    is_brute = args.brute
-
-    if not is_brute:
-        # convert to random catalog
-        r1 = r1.to_rand(
-            z_min       = bins.min('z'),
-            z_max       = bins.max('z'),
-            z_nbins     = bins.num_bins('z'),
-            ra_min      = bins.min('ra'),
-            ra_max      = bins.max('ra'),
-            ra_nbins    = bins.num_bins('ra'),
-            dec_min     = bins.min('dec'),
-            dec_max     = bins.max('dec'),
-            dec_nbins   = bins.num_bins('dec'))
-        r2 = r2.to_rand(
-            z_min       = bins.min('z'),
-            z_max       = bins.max('z'),
-            z_nbins     = bins.num_bins('z'),
-            ra_min      = bins.min('ra'),
-            ra_max      = bins.max('ra'),
-            ra_nbins    = bins.num_bins('ra'),
-            dec_min     = bins.min('dec'),
-            dec_max     = bins.max('dec'),
-            dec_nbins   = bins.num_bins('dec'))
-        # set up catalog and tree for RR(s)
-        print('')
-        print('setting up for RR(s)')
-        rr_tree = r1.build_tree()
-        if r1.ngals < r2.ngals:
-            rr_pair_catalog = r1.get_catalog()
-            rr_tree_catalog = r2.get_catalog()
-        else:
-            rr_pair_catalog = r2.get_catalog()
-            rr_tree_catalog = r1.get_catalog()
-        rr_dict = {'tree': rr_tree,
-                   'tree_catalog': rr_tree_catalog,
-                   'pair_catalog': rr_pair_catalog}
+    r1 = r1.to_rand(
+        z_min       = bins.min('z'),
+        z_max       = bins.max('z'),
+        z_nbins     = bins.num_bins('z'),
+        ra_min      = bins.min('ra'),
+        ra_max      = bins.max('ra'),
+        ra_nbins    = bins.num_bins('ra'),
+        dec_min     = bins.min('dec'),
+        dec_max     = bins.max('dec'),
+        dec_nbins   = bins.num_bins('dec'))
+    r2 = r2.to_rand(
+        z_min       = bins.min('z'),
+        z_max       = bins.max('z'),
+        z_nbins     = bins.num_bins('z'),
+        ra_min      = bins.min('ra'),
+        ra_max      = bins.max('ra'),
+        ra_nbins    = bins.num_bins('ra'),
+        dec_min     = bins.min('dec'),
+        dec_max     = bins.max('dec'),
+        dec_nbins   = bins.num_bins('dec'))
+    # set up catalog and tree for RR(s)
+    print('')
+    print('setting up for RR(s)')
+    rr_tree = r1.build_tree()
+    if r1.ngals < r2.ngals:
+        rr_pair_catalog = r1.get_catalog()
+        rr_tree_catalog = r2.get_catalog()
     else:
-        # set up catalog and tree for RR(s)
-        print('')
-        print('keeping the random catalogs are they are for brute force calculations')
-        print('')
-        print('setting up for RR(s)')
-        rr_tree = r1.build_tree(metric='haversine')
-        if r1.ngals < r2.ngals:
-            rr_pair_catalog = r1.get_catalog()
-            rr_tree_catalog = r2.get_catalog()
-        else:
-            rr_pair_catalog = r2.get_catalog()
-            rr_tree_catalog = r1.get_catalog()
-        rr_dict = {'tree': rr_tree,
-                   'tree_catalog': rr_tree_catalog,
-                   'pair_catalog': rr_pair_catalog}
-    
+        rr_pair_catalog = r2.get_catalog()
+        rr_tree_catalog = r1.get_catalog()
+    rr_dict = {'tree': rr_tree,
+               'tree_catalog': rr_tree_catalog,
+               'pair_catalog': rr_pair_catalog}
+
     # set up catalog and tree for DD(s)
     print('')
     print('setting up for DD(s)')
@@ -193,10 +173,10 @@ if __name__ == '__main__':
     # set up catalog and tree for DR(s)
     print('')
     print('setting up for DR(s)')
-    if is_brute:
-        d1r2_tree = r2.build_tree(metric='haversine')
-    else:
-        d1r2_tree = r2.build_tree()
+    #if is_brute:
+    #    d1r2_tree = r2.build_tree(metric='haversine')
+    #else:
+    d1r2_tree = r2.build_tree()
     d1r2_pair_catalog = d1.get_catalog()
     d1r2_tree_catalog = r2.get_catalog()
     d1r2_dict = {'tree': d1r2_tree,
@@ -205,10 +185,7 @@ if __name__ == '__main__':
     if same:
         d2r1_dict = None
     else:
-        if is_brute:
-            d2r1_tree = r1.build_tree(metric='haversine')
-        else:
-            d2r1_tree = r1.build_tree()
+        d2r1_tree = r1.build_tree()
         d2r1_pair_catalog = d2.get_catalog()
         d2r1_tree_catalog = r1.get_catalog()
         d2r1_dict = {'tree': d2r1_tree,
@@ -241,7 +218,10 @@ if __name__ == '__main__':
         'helper': helper,
         'is_brute': is_brute,
     }
-
+    if is_brute:
+        save_params['d1_catalog'] = d1.get_catalog()
+        save_params['d2_catalog'] = d2.get_catalog()
+        
     # create folder if folder does not exist
     dirname = os.path.dirname(args.prefix)
     if not os.path.isdir(dirname) and len(dirname) > 0:
