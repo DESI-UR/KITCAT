@@ -38,6 +38,11 @@ if __name__ == '__main__':
                             default = 1,
                             dest    = 'nslice',
                             type    = int)
+        parser.add_argument("-b", "--brute",
+                            help    = 'uses the brute force for the correlations',
+                            default = 0,
+                            type    = int,
+                            choices = (0, 1))
         params = parser.parse_args()
         return params
 
@@ -115,42 +120,62 @@ if __name__ == '__main__':
     print(' + norm_d1r2: %.4e, %.4e' % norm_d1r2)
     print(' + norm_d2r1: %.4e, %.4e' % norm_d2r1)
 
-    # convert to random catalog
-    r1 = r1.to_rand(
-        z_min       = bins.min('z'),
-        z_max       = bins.max('z'),
-        z_nbins     = bins.num_bins('z'),
-        ra_min      = bins.min('ra'),
-        ra_max      = bins.max('ra'),
-        ra_nbins    = bins.num_bins('ra'),
-        dec_min     = bins.min('dec'),
-        dec_max     = bins.max('dec'),
-        dec_nbins   = bins.num_bins('dec'))
-    r2 = r2.to_rand(
-        z_min       = bins.min('z'),
-        z_max       = bins.max('z'),
-        z_nbins     = bins.num_bins('z'),
-        ra_min      = bins.min('ra'),
-        ra_max      = bins.max('ra'),
-        ra_nbins    = bins.num_bins('ra'),
-        dec_min     = bins.min('dec'),
-        dec_max     = bins.max('dec'),
-        dec_nbins   = bins.num_bins('dec'))
+    # in case of brute for strategy, random catalogs are not converted
+    # but kept as their are.
+    is_brute = args.brute
 
-    # set up catalog and tree for RR(s)
-    print('')
-    print('setting up for RR(s)')
-    rr_tree = r1.build_tree()
-    if r1.ngals < r2.ngals:
-        rr_pair_catalog = r1.get_catalog()
-        rr_tree_catalog = r2.get_catalog()
+    if not is_brute:
+        # convert to random catalog
+        r1 = r1.to_rand(
+            z_min       = bins.min('z'),
+            z_max       = bins.max('z'),
+            z_nbins     = bins.num_bins('z'),
+            ra_min      = bins.min('ra'),
+            ra_max      = bins.max('ra'),
+            ra_nbins    = bins.num_bins('ra'),
+            dec_min     = bins.min('dec'),
+            dec_max     = bins.max('dec'),
+            dec_nbins   = bins.num_bins('dec'))
+        r2 = r2.to_rand(
+            z_min       = bins.min('z'),
+            z_max       = bins.max('z'),
+            z_nbins     = bins.num_bins('z'),
+            ra_min      = bins.min('ra'),
+            ra_max      = bins.max('ra'),
+            ra_nbins    = bins.num_bins('ra'),
+            dec_min     = bins.min('dec'),
+            dec_max     = bins.max('dec'),
+            dec_nbins   = bins.num_bins('dec'))
+        # set up catalog and tree for RR(s)
+        print('')
+        print('setting up for RR(s)')
+        rr_tree = r1.build_tree()
+        if r1.ngals < r2.ngals:
+            rr_pair_catalog = r1.get_catalog()
+            rr_tree_catalog = r2.get_catalog()
+        else:
+            rr_pair_catalog = r2.get_catalog()
+            rr_tree_catalog = r1.get_catalog()
+        rr_dict = {'tree': rr_tree,
+                   'tree_catalog': rr_tree_catalog,
+                   'pair_catalog': rr_pair_catalog}
     else:
-        rr_pair_catalog = r2.get_catalog()
-        rr_tree_catalog = r1.get_catalog()
-    rr_dict = {'tree': rr_tree,
-               'tree_catalog': rr_tree_catalog,
-               'pair_catalog': rr_pair_catalog}
-
+        # set up catalog and tree for RR(s)
+        print('')
+        print('keeping the random catalogs are they are for brute force calculations')
+        print('')
+        print('setting up for RR(s)')
+        rr_tree = r1.build_tree(metric='haversine')
+        if r1.ngals < r2.ngals:
+            rr_pair_catalog = r1.get_catalog()
+            rr_tree_catalog = r2.get_catalog()
+        else:
+            rr_pair_catalog = r2.get_catalog()
+            rr_tree_catalog = r1.get_catalog()
+        rr_dict = {'tree': rr_tree,
+                   'tree_catalog': rr_tree_catalog,
+                   'pair_catalog': rr_pair_catalog}
+    
     # set up catalog and tree for DD(s)
     print('')
     print('setting up for DD(s)')
@@ -164,11 +189,14 @@ if __name__ == '__main__':
     dd_dict = {'tree':dd_tree,
                'tree_catalog': dd_tree_catalog,
                'pair_catalog': dd_pair_catalog}
-
+    
     # set up catalog and tree for DR(s)
     print('')
     print('setting up for DR(s)')
-    d1r2_tree = r2.build_tree()
+    if is_brute:
+        d1r2_tree = r2.build_tree(metric='haversine')
+    else:
+        d1r2_tree = r2.build_tree()
     d1r2_pair_catalog = d1.get_catalog()
     d1r2_tree_catalog = r2.get_catalog()
     d1r2_dict = {'tree': d1r2_tree,
@@ -177,7 +205,10 @@ if __name__ == '__main__':
     if same:
         d2r1_dict = None
     else:
-        d2r1_tree = r1.build_tree()
+        if is_brute:
+            d2r1_tree = r1.build_tree(metric='haversine')
+        else:
+            d2r1_tree = r1.build_tree()
         d2r1_pair_catalog = d2.get_catalog()
         d2r1_tree_catalog = r1.get_catalog()
         d2r1_dict = {'tree': d2r1_tree,
@@ -188,8 +219,12 @@ if __name__ == '__main__':
     print('')
     print('setting up helper object')
     helper = lhelper.CorrelationHelper()
-    helper.z1_distr = r1.z_distr
-    helper.z2_distr = r2.z_distr
+    if not is_brute:
+        helper.z1_distr = r1.z_distr
+        helper.z2_distr = r2.z_distr
+    else:
+        helper.z1_distr = None
+        helper.z2_distr = None
     helper.norm_dd = np.array(norm_dd)
     helper.norm_rr = np.array(norm_rr)
     helper.norm_d1r2 = np.array(norm_d1r2)
@@ -204,6 +239,7 @@ if __name__ == '__main__':
         'cosmos_list': cosmos_list,
         'bins': bins,
         'helper': helper,
+        'is_brute': is_brute,
     }
 
     # create folder if folder does not exist
