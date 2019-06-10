@@ -63,6 +63,47 @@ if __name__ == "__main__":
     helper = preprocess_params['helper']
     same = (d2r1_params is None)
 
+    # calculate zztheta
+    print('')
+    start_time = time.time()
+    zztheta = {}
+    zztheta['dd'] = lanalysis.get_zztheta(
+        tree_catalog    = dd_params['tree_catalog'],
+        pair_catalog    = dd_params['pair_catalog'],
+        tree            = dd_params['tree'],
+        z_min           = bins.min('z'),
+        z_max           = bins.max('z'),
+        z_nbins         = bins.num_bins('z'),
+        theta_max       = bins.max('theta'),
+        theta_nbins     = bins.num_bins('theta'),
+        job_helper      = job_helper,
+        same            = same)
+    zztheta['d1r2'] = lanalysis.get_zztheta(
+        tree_catalog    = d1r2_params['tree_catalog'],
+        pair_catalog    = d1r2_params['pair_catalog'],
+        tree            = d1r2_params['tree'],
+        z_min           = bins.min('z'),
+        z_max           = bins.max('z'),
+        z_nbins         = bins.num_bins('z'),
+        theta_max       = bins.max('theta'),
+        theta_nbins     = bins.num_bins('theta'),
+        job_helper      = job_helper,
+        same            = same)
+    if not same:
+        zztheta['d2r1'] = lanalysis.get_zztheta(
+            tree_catalog    = d2r1_params['tree_catalog'],
+            pair_catalog    = d2r1_params['pair_catalog'],
+            tree            = d2r1_params['tree'],
+            z_min           = bins.min('z'),
+            z_max           = bins.max('z'),
+            z_nbins         = bins.num_bins('z'),
+            theta_max       = bins.max('theta'),
+            theta_nbins     = bins.num_bins('theta'),
+            job_helper      = job_helper,
+            same            = same)
+    time_dd = time.time()-start_time
+    print("--- %f seconds ---" % time_dd)
+    
     # calculate f(theta)
     print('')
     start_time = time.time()
@@ -110,23 +151,6 @@ if __name__ == "__main__":
             job_helper      = job_helper,)
         time_d2r1= time.time()-start_time
         print("--- %f seconds ---" % time_d2r1)
-
-    # calculate zztheta
-    print('')
-    start_time = time.time()
-    zztheta = lanalysis.get_zztheta(
-        tree_catalog    = dd_params['tree_catalog'],
-        pair_catalog    = dd_params['pair_catalog'],
-        tree            = dd_params['tree'],
-        z_min           = bins.min('z'),
-        z_max           = bins.max('z'),
-        z_nbins         = bins.num_bins('z'),
-        theta_max       = bins.max('theta'),
-        theta_nbins     = bins.num_bins('theta'),
-        job_helper      = job_helper,
-        same            = same)
-    time_dd = time.time()-start_time
-    print("--- %f seconds ---" % time_dd)
 
     # store to helper object
     helper.ftheta = ftheta
